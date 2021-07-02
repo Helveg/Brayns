@@ -51,7 +51,9 @@ inline SDFGeometry createSDFSphere(const Vector3f& center, const float radius,
     SDFGeometry geom;
     geom.userData = data;
     geom.p0 = center;
+    geom.p1 = center;
     geom.r0 = radius;
+    geom.r1 = radius;
     geom.type = SDFType::Sphere;
     return geom;
 }
@@ -64,6 +66,7 @@ inline SDFGeometry createSDFPill(const Vector3f& p0, const Vector3f& p1,
     geom.p0 = p0;
     geom.p1 = p1;
     geom.r0 = radius;
+    geom.r1 = radius;
     geom.type = SDFType::Pill;
     return geom;
 }

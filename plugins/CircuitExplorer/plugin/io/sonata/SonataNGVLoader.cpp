@@ -1,16 +1,39 @@
-#include "SonataLoader.h"
+/* Copyright (c) 2015-2021, EPFL/Blue Brain Project
+ * All rights reserved. Do not distribute without permission.
+ * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
+ *
+ * This file is part of the circuit explorer for Brayns
+ * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
-#include "AdvancedCircuitLoader.h"
+#include "SonataNGVLoader.h"
+
+#include "../AdvancedCircuitLoader.h"
 
 #include <common/log.h>
 #include <common/types.h>
 
 #include <brion/blueConfig.h>
 
-SonataLoader::SonataLoader(brayns::Scene &scene,
-                           const brayns::ApplicationParameters &applicationParameters,
-                           brayns::PropertyMap &&loaderParams,
-                           CircuitExplorerPlugin* plugin)
+namespace sonata
+{
+SonataNGVLoader::SonataNGVLoader(brayns::Scene &scene,
+                                 const brayns::ApplicationParameters &applicationParameters,
+                                 brayns::PropertyMap &&loaderParams,
+                                 CircuitExplorerPlugin* plugin)
     : AbstractCircuitLoader(scene, applicationParameters,
                             std::move(loaderParams), plugin)
 {
@@ -22,12 +45,12 @@ SonataLoader::SonataLoader(brayns::Scene &scene,
     _fixedDefaults.setProperty(PROP_SYNCHRONOUS_MODE);
 }
 
-std::string SonataLoader::getName() const
+std::string SonataNGVLoader::getName() const
 {
-    return std::string("Sonata circuit loader");
+    return std::string("Sonata NGV circuit loader");
 }
 
-brayns::PropertyMap SonataLoader::getCLIProperties()
+brayns::PropertyMap SonataNGVLoader::getCLIProperties()
 {
     brayns::PropertyMap properties;
     properties.setProperty({"populations", std::vector<std::string>(), {"Populations to load"}});
@@ -38,21 +61,12 @@ brayns::PropertyMap SonataLoader::getCLIProperties()
     return properties;
 }
 
-std::vector<brayns::ModelDescriptorPtr> SonataLoader::importFromFile(
-    const std::string& filename, const brayns::LoaderProgress& callback,
-    const brayns::PropertyMap& properties) const
-{
-    if(filename.find("BlueConfig") != std::string::npos
-            || filename.find("CircuitConfig") != std::string::npos)
-        return _loadFromBlueConfig(filename, callback, properties);
-
-    return std::vector<brayns::ModelDescriptorPtr>();
-}
-
 std::vector<brayns::ModelDescriptorPtr>
-SonataLoader::_loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                                  const brayns::PropertyMap& props) const
+SonataNGVLoader::importFromFile(const std::string& file,
+                                const brayns::LoaderProgress& cb,
+                                const brayns::PropertyMap& props) const
 {
+    PLUGIN_INFO << "Loading " << file << std::endl;
     std::vector<brayns::ModelDescriptorPtr> result;
 
     const std::vector<std::string>& populationNames =
@@ -112,5 +126,8 @@ SonataLoader::_loadFromBlueConfig(const std::string& file, const brayns::LoaderP
 
     }
 
+    PLUGIN_INFO << "Done" << std::endl;
+
     return result;
+}
 }

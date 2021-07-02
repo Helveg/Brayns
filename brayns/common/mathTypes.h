@@ -128,6 +128,8 @@ using Boxd = Box<double>;
  */
 using Matrix4d = glm::mat<4, 4, double>;
 using Matrix4f = glm::mat4;
+using Matrix3d = glm::mat<3, 3, double>;
+using Matrix3f = glm::mat3;
 
 /**
  * Vector definitions
@@ -152,6 +154,7 @@ typedef std::vector<Vector2d> Vector2ds;
 /**
  * Quaternion definitions
  */
+using Quaternion = glm::quat;
 using Quaterniond = glm::tquat<double, glm::highp>; //!< Double quaternion.
 } // namespace brayns
 

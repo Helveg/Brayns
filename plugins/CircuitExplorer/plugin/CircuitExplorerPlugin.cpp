@@ -31,7 +31,8 @@
 #include <plugin/io/MorphologyCollageLoader.h>
 #include <plugin/io/MorphologyLoader.h>
 #include <plugin/io/PairSynapsesLoader.h>
-#include <plugin/io/SonataLoader.h>
+#include <plugin/io/sonata/SonataLoader.h>
+#include <plugin/io/sonata/SonataNGVLoader.h>
 #include <plugin/io/SynapseCircuitLoader.h>
 #include <plugin/io/SynapseJSONLoader.h>
 #include <plugin/io/VoltageSimulationHandler.h>
@@ -335,8 +336,12 @@ void CircuitExplorerPlugin::init()
                                           this));
 
     registry.registerLoader(
-        std::make_unique<SonataLoader>(scene, pm.getApplicationParameters(),
-                                       SonataLoader::getCLIProperties(), this));
+        std::make_unique<sonata::SonataNGVLoader>(scene,
+                                                  pm.getApplicationParameters(),
+                                                  sonata::SonataNGVLoader::getCLIProperties(),
+                                                  this));
+
+    registry.registerLoader(std::make_unique<sonata::SonataLoader>(scene, this));
 
     auto actionInterface = _api->getActionInterface();
     if (actionInterface)
@@ -1313,7 +1318,7 @@ RemapCircuitResult CircuitExplorerPlugin::_remapCircuitToScheme(
     {
         result.setError(1, "The model with ID " +
                                std::to_string(payload.modelId) +
-                               " does not exists");
+                               " does not allow color remapping");
     }
     return result;
 }
@@ -1426,6 +1431,13 @@ brayns::Message CircuitExplorerPlugin::_colorCells(const ColorCells& payload)
         _api->getScene().markModified();
         _api->triggerRender();
     }
+    else
+    {
+        result.setError(1, "The model with ID " +
+                               std::to_string(payload.modelId) +
+                               " does not allow color remapping");
+    }
+
 
     return result;
 }

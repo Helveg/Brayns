@@ -15,6 +15,7 @@ if(NOT EXISTS ${CMAKE_SOURCE_DIR}/CMake/common/Common.cmake)
 endif()
 
 include(Common)
+common_find_package(sonata)
 common_find_package(Brion)
 common_find_package(ospray 1.8 SYSTEM)
 common_find_package(CGAL)
@@ -57,8 +58,21 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/BrickLoader.cpp
     plugin/io/MorphologyLoader.cpp
     plugin/io/SynapseJSONLoader.cpp
-    plugin/io/SonataLoader.cpp
     plugin/io/Utils.cpp
+    plugin/io/morphology/Morphology.cpp
+    plugin/io/morphology/builders/SDFGeometryBuilder.cpp
+    plugin/io/morphology/instances/SDFMorphologyInstance.cpp
+    plugin/io/morphology/pipeline/RadiusMultiplier.cpp
+    plugin/io/morphology/pipeline/RadiusSmoother.cpp
+    plugin/io/morphology/pipeline/SectionWelder.cpp
+    plugin/io/sonata/SonataLoader.cpp
+    plugin/io/sonata/SonataLoaderProperties.cpp
+    plugin/io/sonata/SonataNGVLoader.cpp
+    plugin/io/sonata/data/SonataCells.cpp
+    plugin/io/sonata/data/SonataPopulation.cpp
+    plugin/io/sonata/data/SonataSelection.cpp
+    plugin/io/sonata/data/SonataSimulationMapping.cpp
+    plugin/io/sonata/data/SonataSynapses.cpp
 )
 
 set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
@@ -81,8 +95,25 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/SynapseCircuitLoader.h
     plugin/io/MorphologyLoader.h
     plugin/io/SynapseJSONLoader.h
-    plugin/io/SonataLoader.h
     plugin/io/Utils.h
+    plugin/io/morphology/Morphology.h
+    plugin/io/morphology/MorphologyGeometryBuilder.h
+    plugin/io/morphology/MorphologyInstance.h
+    plugin/io/morphology/MorphologyPipeline.h
+    plugin/io/morphology/MorphologyTypes.h
+    plugin/io/morphology/builders/SDFGeometryBuilder.h
+    plugin/io/morphology/instances/SDFMorphologyInstance.h
+    plugin/io/morphology/pipeline/RadiusMultiplier.h
+    plugin/io/morphology/pipeline/RadiusSmoother.h
+    plugin/io/morphology/pipeline/SectionWelder.h
+    plugin/io/sonata/SonataLoader.h
+    plugin/io/sonata/SonataNGVLoader.h
+    plugin/io/sonata/data/SonataCells.h
+    plugin/io/sonata/data/SonataPopulation.h
+    plugin/io/sonata/data/SonataSelection.h
+    plugin/io/sonata/data/SonataSimulationMapping.h
+    plugin/io/sonata/data/SonataSynapses.h
+    plugin/io/sonata/data/SonataTypes.h
 )
 
 set(BRAYNSCIRCUITEXPLORER_ISPC_SOURCES
@@ -117,7 +148,7 @@ include_directories(
 set(BRAYNSCIRCUITEXPLORER_LINK_LIBRARIES
     PUBLIC ${OSPRAY_LIBRARIES}
     PRIVATE braynsCommon braynsParameters braynsIO braynsEngine braynsPluginAPI
-    braynsOSPRayEngine glm Brion Brain
+    braynsOSPRayEngine glm sonata::sonata_shared MorphIO::morphio_shared Brion Brain
     ${FREEIMAGE_LIBRARIES} ${HDF5_LIBRARIES}
 )
 

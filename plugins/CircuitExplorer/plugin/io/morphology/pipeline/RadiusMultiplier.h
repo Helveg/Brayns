@@ -1,6 +1,5 @@
-/* Copyright (c) 2018-2019, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
  *
  * This file is part of the circuit explorer for Brayns
  * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
@@ -21,26 +20,22 @@
 
 #pragma once
 
-#include "AbstractCircuitLoader.h"
+#include "../MorphologyPipeline.h"
 
-class SonataLoader : public AbstractCircuitLoader
+namespace morphology
+{
+/**
+ * @brief The RadiusMultiplier class proccess a morphology by multiplying all the
+ * sample radii by a constant multiplier
+ */
+class RadiusMultiplier : public MorphologyPipelineStage
 {
 public:
-    SonataLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    RadiusMultiplier(const float multiplier);
 
-    std::string getName() const final;
-
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
+    void proccess(Morphology& morphology) const final;
 
 private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    const float _multiplier;
 };
+}
