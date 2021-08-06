@@ -28,8 +28,6 @@
 
 #include <brion/blueConfig.h>
 
-namespace sonata
-{
 SonataNGVLoader::SonataNGVLoader(brayns::Scene &scene,
                                  const brayns::ApplicationParameters &applicationParameters,
                                  brayns::PropertyMap &&loaderParams,
@@ -130,4 +128,4 @@ SonataNGVLoader::importFromFile(const std::string& file,
 
     return result;
 }
-}
+

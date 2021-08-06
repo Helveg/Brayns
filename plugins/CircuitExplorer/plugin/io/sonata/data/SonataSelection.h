@@ -24,12 +24,9 @@
 #include <bbp/sonata/config.h>
 #include <bbp/sonata/population.h>
 
-#include "SonataSimulationMapping.h"
+#include "../SonataLoaderTypes.h"
 
-namespace sonata
-{
-namespace data
-{
+
 /**
  * @brief The SonataSelection class is in charge of creating the selection of cells that
  *        will be loaded into brayns, taking into account user parameters and network
@@ -90,5 +87,3 @@ public:
 private:
     bbp::sonata::Selection _selection;
 };
-}
-}

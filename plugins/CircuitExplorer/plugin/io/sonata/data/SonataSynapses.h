@@ -26,10 +26,6 @@
 #include <brayns/common/mathTypes.h>
 
 
-namespace sonata
-{
-namespace data
-{
 class SonataSynapses
 {
 private:
@@ -38,36 +34,39 @@ private:
 public:
     static
     std::vector<uint64_t> getAfferentSourceNodes(const Edges& population,
-                                                 const Selection& selection);
+                                                 const Selection& edgeSelection);
     static
     std::vector<uint64_t> getAfferentTargetNodes(const Edges& population,
-                                                 const Selection& selection);
-
+                                                 const Selection& edgeSelection);
     static
     std::vector<uint64_t> getEfferentSourceNodes(const Edges& population,
-                                                 const Selection& selection);
+                                                 const Selection& edgeSelection);
     static
     std::vector<uint64_t> getEfferentTargetNodes(const Edges& population,
-                                                 const Selection& selection);
+                                                 const Selection& edgeSelection);
 
     static
-    std::vector<int32_t> getSectionIds(const Edges& population, const Selection& selection);
+    std::vector<int32_t> getAfferentSectionIds(const Edges& population,
+                                               const Selection& edgeSelection);
 
     static
-    std::vector<brayns::Vector3f> getSurfacePos(const Edges& population,
-                                                const Selection& selection);
+    std::vector<int32_t> getEfferentSectionIds(const Edges& population,
+                                               const Selection& edgeSelection);
 
-private:
-    static std::vector<std::vector<Synapse>>
-    loadSynapses(const char* sectionAttrib,
-                 const char* segmentAttrib,
-                 const char* posXAttrib,
-                 const char* posYAttrib,
-                 const char* posZAttrib,
-                 const Selection& selection,
-                 const Edges& population,
-                 const float percentage,
-                 const bool afferent);
+    static
+    std::vector<brayns::Vector3f> getAfferentSurfacePos(const Edges& population,
+                                                        const Selection& selection);
+
+    static
+    std::vector<brayns::Vector3f> getEfferentSurfacePos(const Edges& population,
+                                                        const Selection& selection);
+
+    static
+    std::vector<float> getAfferentSectionDistances(const Edges& population,
+                                                   const Selection& selection);
+
+    static
+    std::vector<float> getEfferentSectionDistances(const Edges& population,
+                                                   const Selection& selection);
+
 };
-} // namespace data
-} // namespace sonata

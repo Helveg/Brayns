@@ -21,26 +21,41 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../SonataLoaderTypes.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+#include <string>
+#include <vector>
+
+#include <bbp/sonata/population.h>
+
+#include <brayns/common/simulation/AbstractSimulationHandler.h>
+
+struct CellMapping
+{
+    size_t globalOffset;
+    std::vector<uint16_t> offsets;
+    std::vector<uint16_t> compartments;
+};
+
+class SonataSimulation
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    SonataSimulation(const std::string& path, const std::string& population)
+     : _path(path)
+     , _population(population)
+    {
+    }
 
-    std::string getName() const final;
+    virtual ~SonataSimulation() = default;
 
-    static brayns::PropertyMap getCLIProperties();
+    virtual std::vector<CellMapping> loadMapping(const bbp::sonata::Selection&) const = 0;
 
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
+    virtual brayns::AbstractSimulationHandlerPtr
+    createSimulationHandler(const bbp::sonata::Selection&) const = 0;
 
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+protected:
+    const std::string _path;
+    const std::string _population;
 };
+
+using SonataSimulationPtr = std::unique_ptr<SonataSimulation>;

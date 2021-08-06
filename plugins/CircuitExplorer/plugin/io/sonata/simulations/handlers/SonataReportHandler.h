@@ -21,26 +21,31 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include <brayns/common/simulation/AbstractSimulationHandler.h>
 
-class SonataNGVLoader : public AbstractCircuitLoader
+#include <bbp/sonata/report_reader.h>
+
+class SonataReportHandler : public brayns::AbstractSimulationHandler
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    SonataReportHandler(const std::string& h5FilePath,
+                        const std::string& populationName,
+                        const bbp::sonata::Selection& selection);
 
-    std::string getName() const final;
+    brayns::AbstractSimulationHandlerPtr clone() const final;
 
-    static brayns::PropertyMap getCLIProperties();
+    void* getFrameDataImpl(const uint32_t frame) final;
 
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
+    bool isReady() const final
+    {
+        return _ready;
+    }
 
 private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    const std::string _h5FilePath;
+    const std::string _populationName;
+    const bbp::sonata::Selection _selection;
+    const bbp::sonata::ElementReportReader _reader;
+    const bbp::sonata::ElementReportReader::Population& _reportPopulation;
+    bool _ready {true};
 };

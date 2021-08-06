@@ -21,26 +21,21 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../EdgePopulationLoader.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+#include <bbp/sonata/config.h>
+
+class CommonEdgePopulationLoader: public EdgePopulationLoader
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    CommonEdgePopulationLoader(bbp::sonata::EdgePopulation&& population,
+                               bbp::sonata::PopulationProperties&& populationProperties)
+     : EdgePopulationLoader(std::move(population), std::move(populationProperties))
+    {
+    }
 
-    std::string getName() const final;
-
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    std::vector<std::vector<SynapseInfo>>
+    load(const PopulationLoadConfig& loadConfig,
+         const bbp::sonata::Selection& nodeSelection,
+         const bool afferent) const final;
 };

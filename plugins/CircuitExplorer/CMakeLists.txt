@@ -59,20 +59,33 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/MorphologyLoader.cpp
     plugin/io/SynapseJSONLoader.cpp
     plugin/io/Utils.cpp
-    plugin/io/morphology/Morphology.cpp
-    plugin/io/morphology/builders/SDFGeometryBuilder.cpp
-    plugin/io/morphology/instances/SDFMorphologyInstance.cpp
-    plugin/io/morphology/pipeline/RadiusMultiplier.cpp
-    plugin/io/morphology/pipeline/RadiusSmoother.cpp
-    plugin/io/morphology/pipeline/SectionWelder.cpp
-    plugin/io/sonata/SonataLoader.cpp
     plugin/io/sonata/SonataLoaderProperties.cpp
     plugin/io/sonata/SonataNGVLoader.cpp
-    plugin/io/sonata/data/SonataCells.cpp
-    plugin/io/sonata/data/SonataPopulation.cpp
-    plugin/io/sonata/data/SonataSelection.cpp
-    plugin/io/sonata/data/SonataSimulationMapping.cpp
+    plugin/io/sonata/SonataLoader.cpp
     plugin/io/sonata/data/SonataSynapses.cpp
+    plugin/io/sonata/data/SonataCells.cpp
+    plugin/io/sonata/data/SonataSelection.cpp
+    plugin/io/sonata/morphology/MorphologyPipeline.cpp
+    plugin/io/sonata/morphology/Morphology.cpp
+    plugin/io/sonata/populations/nodes/BiophysicalPopulationLoader.cpp
+    plugin/io/sonata/populations/edges/GlialGlialPopulationLoader.cpp
+    plugin/io/sonata/populations/edges/CommonEdgePopulationLoader.cpp
+    plugin/io/sonata/populations/edges/ElectricalSynapsePopulationLoader.cpp
+    plugin/io/sonata/populations/edges/ChemicalSynapsePopulationLoader.cpp
+    plugin/io/sonata/morphology/pipeline/SectionWelder.cpp
+    plugin/io/sonata/morphology/pipeline/RadiusMultiplier.cpp
+    plugin/io/sonata/morphology/pipeline/RadiusSmoother.cpp
+    plugin/io/sonata/morphology/instances/SDFMorphologyInstance.cpp
+    plugin/io/sonata/morphology/instances/PrimitiveMorphologyInstance.cpp
+    plugin/io/sonata/morphology/instances/SampleMorphologyInstance.cpp
+    plugin/io/sonata/morphology/builders/SampleGeometryBuilder.cpp
+    plugin/io/sonata/morphology/builders/SDFGeometryBuilder.cpp
+    plugin/io/sonata/morphology/builders/PrimitiveGeometryBuilder.cpp
+    plugin/io/sonata/simulations/handlers/SonataReportHandler.cpp
+    plugin/io/sonata/simulations/handlers/SonataSpikeHandler.cpp
+    plugin/io/sonata/simulations/reports/SpikeSimulation.cpp
+    plugin/io/sonata/simulations/reports/CompartmentSimulation.cpp
+    plugin/io/sonata/simulations/TransferFunctionSetUp.cpp
 )
 
 set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
@@ -96,24 +109,43 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/MorphologyLoader.h
     plugin/io/SynapseJSONLoader.h
     plugin/io/Utils.h
-    plugin/io/morphology/Morphology.h
-    plugin/io/morphology/MorphologyGeometryBuilder.h
-    plugin/io/morphology/MorphologyInstance.h
-    plugin/io/morphology/MorphologyPipeline.h
-    plugin/io/morphology/MorphologyTypes.h
-    plugin/io/morphology/builders/SDFGeometryBuilder.h
-    plugin/io/morphology/instances/SDFMorphologyInstance.h
-    plugin/io/morphology/pipeline/RadiusMultiplier.h
-    plugin/io/morphology/pipeline/RadiusSmoother.h
-    plugin/io/morphology/pipeline/SectionWelder.h
     plugin/io/sonata/SonataLoader.h
+    plugin/io/sonata/SonataLoaderTypes.h
     plugin/io/sonata/SonataNGVLoader.h
-    plugin/io/sonata/data/SonataCells.h
-    plugin/io/sonata/data/SonataPopulation.h
+    plugin/io/sonata/SonataLoaderProperties.h
+    plugin/io/sonata/populations/PopulationFactory.h
+    plugin/io/sonata/populations/EdgePopulationLoader.h
+    plugin/io/sonata/populations/NodePopulationLoader.h
     plugin/io/sonata/data/SonataSelection.h
-    plugin/io/sonata/data/SonataSimulationMapping.h
+    plugin/io/sonata/data/SonataCells.h
     plugin/io/sonata/data/SonataSynapses.h
-    plugin/io/sonata/data/SonataTypes.h
+    plugin/io/sonata/morphology/Morphology.h
+    plugin/io/sonata/morphology/MorphologyInstance.h
+    plugin/io/sonata/morphology/MorphologyGeometryBuilder.h
+    plugin/io/sonata/morphology/MorphologyPipeline.h
+    plugin/io/sonata/simulations/SonataSimulation.h
+    plugin/io/sonata/simulations/SonataSimulationFactory.h
+    plugin/io/sonata/populations/nodes/BiophysicalPopulationLoader.h
+    plugin/io/sonata/populations/edges/CommonEdgePopulationLoader.h
+    plugin/io/sonata/populations/edges/GlialGlialPopulationLoader.h
+    plugin/io/sonata/populations/edges/ChemicalSynapsePopulationLoader.h
+    plugin/io/sonata/populations/edges/ElectricalSynapsePopulationLoader.h
+    plugin/io/sonata/morphology/pipeline/SectionWelder.h
+    plugin/io/sonata/morphology/pipeline/RadiusSmoother.h
+    plugin/io/sonata/morphology/pipeline/RadiusMultiplier.h
+    plugin/io/sonata/morphology/instances/SampleMorphologyInstance.h
+    plugin/io/sonata/morphology/instances/PrimitiveMorphologyInstance.h
+    plugin/io/sonata/morphology/instances/SDFMorphologyInstance.h
+    plugin/io/sonata/morphology/builders/PrimitiveGeometryBuilder.h
+    plugin/io/sonata/morphology/builders/SDFGeometryBuilder.h
+    plugin/io/sonata/morphology/builders/SampleGeometryBuilder.h
+    plugin/io/sonata/simulations/SonataSimulation.h
+    plugin/io/sonata/simulations/SonataSimulationFactory.h
+    plugin/io/sonata/simulations/TransferFunctionSetUp.h
+    plugin/io/sonata/simulations/handlers/SonataReportHandler.h
+    plugin/io/sonata/simulations/handlers/SonataSpikeHandler.h
+    plugin/io/sonata/simulations/reports/CompartmentSimulation.h
+    plugin/io/sonata/simulations/reports/SpikeSimulation.h
 )
 
 set(BRAYNSCIRCUITEXPLORER_ISPC_SOURCES

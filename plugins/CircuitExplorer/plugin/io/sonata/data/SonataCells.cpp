@@ -25,10 +25,7 @@
 
 #include <glm/gtx/matrix_decompose.hpp>
 
-namespace sonata
-{
-namespace data
-{
+
 namespace
 {
 constexpr char attribX[]               = "x";
@@ -93,6 +90,12 @@ inline void checkAttributes(const bbp::sonata::NodePopulation& nodes,
 
 }
 
+std::vector<std::string> SonataCells::getMorphologies(const Nodes& nodes,
+                                                      const Selection& selection)
+{
+    checkAttributes(nodes, {attribMorphology});
+    return nodes.getAttribute<std::string>(attribMorphology, selection);
+}
 
 std::vector<brayns::Vector3f> SonataCells::getPositions(const Nodes& nodes,
                                                         const Selection& selection)
@@ -104,7 +107,7 @@ std::vector<brayns::Vector3f> SonataCells::getPositions(const Nodes& nodes,
     const auto zPos = nodes.getAttribute<float>(attribZ, selection);
 
     std::vector<brayns::Vector3f> result (xPos.size());
-    #pragma omp parallel for
+    //#pragma omp parallel for
     for(size_t i = 0; i < xPos.size(); ++i)
     {
         result[i].x = xPos[i];
@@ -128,15 +131,11 @@ std::vector<brayns::Quaternion> SonataCells::getRotations(const Nodes& nodes,
     const auto z = nodes.getAttribute<float>(attribOrientationZ, selection);
     const auto w = nodes.getAttribute<float>(attribOrientationW, selection);
 
-    std::vector<glm::quat> result (x.size());
-    #pragma omp parallel for
+    std::vector<brayns::Quaternion> result (x.size());
+    //#pragma omp parallel for
     for(size_t i = 0; i < x.size(); ++i)
-    {
-        result[i].w = w[i];
-        result[i].x = x[i];
-        result[i].y = y[i];
-        result[i].z = z[i];
-    }
+        result[i] = glm::normalize(brayns::Quaternion(w[i], x[i], y[i], z[i]));
+
     return result;
 }
 
@@ -245,5 +244,3 @@ SonataCells::getVasculatureSegmentIds(const Nodes& nodes, const Selection& selec
     checkAttributes(nodes, {attribVascSegmentId});
     return nodes.getAttribute<uint32_t>(attribVascSegmentId, selection);
 }
-} // namespace data
-} // namespace sonata

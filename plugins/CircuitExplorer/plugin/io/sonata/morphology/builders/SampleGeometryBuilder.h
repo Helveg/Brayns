@@ -1,6 +1,5 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
  * This file is part of the circuit explorer for Brayns
  * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
@@ -21,26 +20,5 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../MorphologyGeometryBuilder.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
-{
-public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
-
-    std::string getName() const final;
-
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
-};

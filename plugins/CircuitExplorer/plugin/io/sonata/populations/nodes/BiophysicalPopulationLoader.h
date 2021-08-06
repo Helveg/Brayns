@@ -21,26 +21,19 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../NodePopulationLoader.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+class BiophysicalPopualtionLoader : public NodePopulationLoader
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    BiophysicalPopualtionLoader(bbp::sonata::NodePopulation&& population,
+                                bbp::sonata::PopulationProperties&& properties)
+     : NodePopulationLoader(std::move(population), std::move(properties))
+    {
+    }
 
-    std::string getName() const final;
-
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    std::vector<MorphologyInstancePtr>
+    load(const PopulationLoadConfig& loadSettings,
+          const bbp::sonata::Selection& nodeSelection,
+          const brayns::LoaderProgress& updateCb) const final;
 };

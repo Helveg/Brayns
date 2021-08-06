@@ -19,28 +19,20 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#pragma once
+#include "ElectricalSynapsePopulationLoader.h"
 
-#include "../AbstractCircuitLoader.h"
+#include "../PopulationFactory.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+namespace
+{
+class Registerer
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
-
-    std::string getName() const final;
-
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    Registerer()
+    {
+        PopulationFactory::instance()
+                .registerEdgeLoader<ElectricalSynapsePopulation>("electrical");
+    }
 };
+Registerer Registerer;
+}

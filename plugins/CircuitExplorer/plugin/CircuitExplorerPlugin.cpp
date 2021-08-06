@@ -336,12 +336,12 @@ void CircuitExplorerPlugin::init()
                                           this));
 
     registry.registerLoader(
-        std::make_unique<sonata::SonataNGVLoader>(scene,
-                                                  pm.getApplicationParameters(),
-                                                  sonata::SonataNGVLoader::getCLIProperties(),
-                                                  this));
+        std::make_unique<SonataNGVLoader>(scene,
+                                          pm.getApplicationParameters(),
+                                          SonataNGVLoader::getCLIProperties(),
+                                          this));
 
-    registry.registerLoader(std::make_unique<sonata::SonataLoader>(scene, this));
+    registry.registerLoader(std::make_unique<SonataLoader>(scene));
 
     auto actionInterface = _api->getActionInterface();
     if (actionInterface)

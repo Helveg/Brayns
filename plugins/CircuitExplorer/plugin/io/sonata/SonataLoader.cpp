@@ -22,203 +22,70 @@
 #include "SonataLoader.h"
 
 #include "SonataLoaderProperties.h"
-#include "data/SonataPopulation.h"
-#include "data/SonataSimulationMapping.h"
+#include "data/SonataSelection.h"
+#include "populations/PopulationFactory.h"
+#include "simulations/SonataSimulationFactory.h"
+#include "simulations/TransferFunctionSetUp.h"
 
-#include "../morphology/Morphology.h"
-#include "../morphology/MorphologyPipeline.h"
-#include "../morphology/builders/SDFGeometryBuilder.h"
-#include "../morphology/pipeline/RadiusMultiplier.h"
-#include "../morphology/pipeline/RadiusSmoother.h"
-
-#include "../../CircuitExplorerPlugin.h"
 #include "../../../common/log.h"
 
 #include <brayns/common/utils/stringUtils.h>
+#include <brayns/engine/Scene.h>
 
-namespace sonata
-{
 
 namespace
 {
-struct PopulationModel
+
+inline auto selectNodes(const bbp::sonata::CircuitConfig& config,
+                        const PopulationLoadConfig& loadConfig)
 {
-    brayns::ModelPtr model;
-    brayns::Vector3f modelWorldPosition;
-    std::string reportName;
-    std::string reportType;
-    std::string nodeSetsString;
-    uint64_t numCells;
-};
-
-auto createModelDescriptor(const std::string& path,
-                            PopulationModel& popModel)
-{
-    brayns::ModelMetadata metadata = {
-        {"Report", popModel.reportName},
-        {"Report type", popModel.reportType},
-        {"NodeSets", popModel.nodeSetsString},
-        {"Number of neurons", std::to_string(popModel.numCells)},
-        {"CircuitPath", path}};
-
-    brayns::ModelDescriptorPtr modelDescriptor;
-    brayns::Transformation transformation;
-    transformation.setRotationCenter(popModel.modelWorldPosition);
-    modelDescriptor =
-        std::make_shared<brayns::ModelDescriptor>(std::move(popModel.model), "Circuit",
-                                                  path,
-                                                  metadata);
-    modelDescriptor->setTransformation(transformation);
-
-    /*
-    // Clean the circuit mapper associated with this model
-    modelDescriptor->onRemoved([plptr = _pluginPtr](const brayns::ModelDescriptor& remMod)
-    {
-        plptr->releaseCircuitMapper(remMod.getModelID());
-    });
-
-    objMapper.setSourceModel(modelDescriptor);
-    objMapper.onCircuitColorFinish(colorScheme, morphologyScheme);
-
-    this->_pluginPtr->addCircuitMapper(std::move(objMapper));
-    */
-    return modelDescriptor;
-} 
-
-auto createMorphologyPipeline(const PopulationLoadConfig& populationProps)
-{
-    morphology::MorphologyPipeline pipeline;
-
-    if(populationProps.morphologyRadius != 1.f)
-        pipeline.registerStage<morphology::RadiusMultiplier>(populationProps.morphologyRadius);
-
-    if(populationProps.morphologyMode == "vanilla")
-    {
-
-    }
-    else if(populationProps.morphologyMode == "smooth")
-    {
-        pipeline.setGeometryBuilderClass<morphology::SDFGeometryBuilder>();
-        pipeline.registerStage<morphology::RadiusSmoother>();
-    }
-    else if(populationProps.morphologyMode == "samples")
-    {
-
-    }
-
-    return pipeline;
+    NodeSelection selection;
+    selection.select(config, loadConfig.name, loadConfig.nodeSets);
+    selection.select(loadConfig.nodeIds);
+    selection.select(loadConfig.simulationType, loadConfig.simulationPath, loadConfig.name);
+    return selection.intersection(loadConfig.percentage);
 }
 
-auto loadPopulation(const bbp::sonata::CircuitConfig& config,
-                    const PopulationLoadConfig& popProps,
-                    const brayns::LoaderProgress& cb,
-                    const double startLoadProgress,
-                    const double endLoadProgress,
-                    brayns::Scene& scene)
+inline std::unique_ptr<SonataSimulation> instantiateSimulation(const PopulationLoadConfig& config)
 {
-    // Extra setting stored on configuration file (morphology_dir)
-    const auto populationSettings = config.getNodePopulationProperties(popProps.name);
+    if(config.simulationType == SimulationType::NONE)
+        return {nullptr};
 
-    if(populationSettings.type != "biophysical")
-        throw std::runtime_error("Only biophysical population types are supported at the momment");
+    return SonataSimulationFactory::instance().createSimulation(config.simulationType,
+                                                                config.simulationPath,
+                                                                config.name);
+}
 
-    // Loaded data from input settings
-    const data::SonataPopulation population (config, popProps);
+inline std::unique_ptr<NodePopulationLoader>
+instantiateNodes(const bbp::sonata::CircuitConfig& circuitConfig,
+                 const PopulationLoadConfig& loadConfig)
+{
+    return PopulationFactory::instance()
+                    .createNodeLoader(circuitConfig.getNodePopulation(loadConfig.name),
+                                      circuitConfig.getNodePopulationProperties(loadConfig.name));
+}
 
-    // Simulation, if any
-    const auto simulationMapping = data::SonataSimulationMapping::compute(population,
-                                                                          popProps.simulationPath,
-                                                                          popProps.simulationType);
+inline std::unique_ptr<EdgePopulationLoader>
+instantiateEdges(const bbp::sonata::CircuitConfig& circuitConfig,
+                 const PopulationLoadConfig& loadConfig,
+                 const std::string& edgePopulation)
+{
+    bbp::sonata::EdgePopulation edges = circuitConfig.getEdgePopulation(edgePopulation);
+    if(edges.target() != loadConfig.name && edges.source() != loadConfig.name)
+        throw std::runtime_error("Requested edge population '" + edgePopulation
+                                 + "' does not have node population '" + loadConfig.name
+                                 + "' neither as source or target node population");
 
-    // Maps morphology class to all cell indices that uses that class
-    std::unordered_map<std::string, std::vector<uint64_t>> morphologyMap;
-    for(size_t i = 0; i < population.getNumLoadedCells(); ++i)
-    {
-        const auto& cell = population.getCell(i);
-        morphologyMap[cell.morphologyClass].push_back(cell.index);
-    }
-
-    const double progressChunk = (endLoadProgress - startLoadProgress) /
-            static_cast<double>(morphologyMap.size());
-    double currentProgress = startLoadProgress;
-    const std::string loadingPlaceholder = "Loading " + population.name() + " morphologies";
-
-    auto model = scene.createModel();
-    brayns::Boxf fastBounds;
-    fastBounds.reset();
-
-    const morphology::MorphologyPipeline pipeline = createMorphologyPipeline(popProps);
-
-    for(const auto& entry : morphologyMap)
-    {
-        cb.updateProgress(loadingPlaceholder, static_cast<float>(currentProgress));
-
-        // Load morphology
-        const auto morphPath = populationSettings.morphologiesDir + "/" + entry.first + ".swc";
-        const auto builder = pipeline.importMorphology(morphPath,
-                                                       popProps.morphologySections);
-
-        // Instantiate the morphology for every cell with such morphology class
-        for(const auto cellIndex : entry.second)
-        {
-            // Build cell morphology geometry
-            const auto& cell = population.getCell(cellIndex);
-            auto morphologyInstance = builder->instantiate(cell.translation, cell.rotation);
-
-            // Add synapses, if any
-            for(const auto& afferentPop : popProps.afferentPopulations)
-            {
-                const auto& afferentSynapses = population.getAfferentSynapses(cell, afferentPop);
-                for(const auto& synapse : afferentSynapses)
-                    morphologyInstance->addSynapse(afferentPop,
-                                                   synapse.surfacePos,
-                                                   synapse.edgeId,
-                                                   synapse.sectionId,
-                                                   true);
-            }
-            for(const auto& efferentPop : popProps.efferentPopulations)
-            {
-                const auto& efferentSynapses = population.getEfferentSynapses(cell, efferentPop);
-                for(const auto& synapse : efferentSynapses)
-                    morphologyInstance->addSynapse(efferentPop,
-                                                   synapse.surfacePos,
-                                                   synapse.edgeId,
-                                                   synapse.sectionId,
-                                                   false);
-            }
-
-            // Map simulation, if any
-            if(!simulationMapping.empty())
-            {
-                const auto& cellMapping = simulationMapping[cellIndex];
-                morphologyInstance->mapSimulation(cellMapping.globalOffset,
-                                                  cellMapping.sectionsOffsets,
-                                                  cellMapping.sectionsCompartments);
-            }
-
-            // Add to the model
-            morphologyInstance->addToModel(*model);
-
-            // Update model bounds
-            fastBounds.merge(brayns::Vector3f(cell.translation));
-        }
-
-        currentProgress += progressChunk;
-    }
-
-    PopulationModel pm;
-    pm.model = std::move(model);
-    pm.modelWorldPosition = fastBounds.getCenter();
-    pm.nodeSetsString = brayns::string_utils::join(popProps.nodeSets, ",");
-    pm.numCells = population.getNumLoadedCells();
-    return pm;
+    return PopulationFactory::instance()
+                    .createEdgeLoader(std::move(edges),
+                                      circuitConfig.getEdgePopulationProperties(edgePopulation));
 }
 
 } // namespace
 
-SonataLoader::SonataLoader(brayns::Scene& scene, CircuitExplorerPlugin* pluginPtr)
+
+SonataLoader::SonataLoader(brayns::Scene& scene)
  : brayns::Loader(scene)
- , _pluginPtr(pluginPtr)
 {
     PLUGIN_INFO << "Registering " << getName() << std::endl;
 }
@@ -230,12 +97,7 @@ std::vector<std::string> SonataLoader::getSupportedExtensions() const
 
 bool SonataLoader::isSupported(const std::string&, const std::string& extension) const
 {
-    std::string extCopy = extension;
-    std::transform(extCopy.begin(), extCopy.end(), extCopy.begin(), [](const char c)
-    {
-        return std::tolower(c);
-    });
-    return extCopy == "json";
+    return brayns::string_utils::toLowercase(extension) == "json";
 }
 
 std::string SonataLoader::getName() const
@@ -261,45 +123,98 @@ SonataLoader::importFromFile(const std::string& path,
                              const brayns::LoaderProgress& callback,
                              const brayns::PropertyMap& props) const
 {
-    PLUGIN_INFO << "Sonata multi-population loader: Loading " << path << std::endl;
-        const bbp::sonata::CircuitConfig config = bbp::sonata::CircuitConfig::fromFile(path);
+    PLUGIN_INFO << "SONATA loader: Importing " << path << std::endl;
+
+    const bbp::sonata::CircuitConfig config = bbp::sonata::CircuitConfig::fromFile(path);
 
     // Check input loading paraemters <-> disk files sanity
-    callback.updateProgress("Parsing input parameters", 0.f);
     const SonataLoaderProperties loaderProps (config, props);
-
-    const auto numPopulations = loaderProps.nodePopulations().size();
+    const auto& requestedPopulations = loaderProps.getRequestedPopulations();
 
     // Load each population
-    const double progressChunk = 1.0 / static_cast<double>(numPopulations);
-    double currentProgress = 0.f;
+    std::vector<brayns::ModelDescriptorPtr> result (requestedPopulations.size());
 
-    std::vector<brayns::ModelDescriptorPtr> result;
-    result.reserve(numPopulations);
-
-    for(const auto& nodePopConfig : loaderProps.nodePopulations())
+    for(size_t i = 0; i < requestedPopulations.size(); ++i)
     {
-        callback.updateProgress("Loading population " + nodePopConfig.name, currentProgress);
-        auto model = _scene.createModel();
+        // User load settings for this population
+        const auto& loadConfig = requestedPopulations[i];
 
-        // Load the morphology, synapses and simulation into a model
-        const float startProgress = currentProgress;
-        const float endProgress = startProgress + progressChunk;
-        auto pm = loadPopulation(config,
-                                  nodePopConfig,
-                                  callback,
-                                  currentProgress,
-                                  endProgress,
-                                  _scene);
-        // Create the model descriptor and add it to the scene
-        result.push_back(createModelDescriptor(path, pm));
+        // Compute the node IDs that we will load
+        const auto nodeSelection = selectNodes(config, loadConfig);
 
-        currentProgress += progressChunk;
+        if(nodeSelection.empty())
+            throw std::runtime_error("Population " + loadConfig.name + " node selection is empty");
+
+        // Load nodes
+        const auto nodeLoader  = instantiateNodes(config, loadConfig);
+        auto nodes = nodeLoader->load(loadConfig, nodeSelection, callback);
+
+        // Load edges (synapses) into the nodes
+        for(const auto& afferent : loadConfig.afferentPopulations)
+        {
+            const auto edgeLoader = instantiateEdges(config, loadConfig, afferent);
+            const auto synapses = edgeLoader->load(loadConfig, nodeSelection, true);
+            for(size_t i = 0; i < nodes.size(); ++i)
+            {
+                auto& node = nodes[i];
+                for(const auto& s : synapses[i])
+                    node->addSynapse(s.synapseId, s.sectionId, s.distance, s.position);
+            }
+        }
+        for(const auto& efferent : loadConfig.efferentPopulations)
+        {
+            const auto edgeLoader = instantiateEdges(config, loadConfig, efferent);
+            const auto synapses = edgeLoader->load(loadConfig, nodeSelection, false);
+            for(size_t i = 0; i < nodes.size(); ++i)
+            {
+                auto& node = nodes[i];
+                for(const auto& s : synapses[i])
+                    node->addSynapse(s.synapseId, s.sectionId, s.distance, s.position);
+            }
+        }
+
+        // Map simulation
+        const auto simulation = instantiateSimulation(loadConfig);
+        if(simulation)
+        {
+            const auto mapping = simulation->loadMapping(nodeSelection);
+            for(size_t i = 0; i < nodes.size(); ++i)
+            {
+                const auto& cm = mapping[i];
+                nodes[i]->mapSimulation(cm.globalOffset, cm.offsets, cm.compartments);
+            }
+        }
+
+        // Add to brayns model
+        brayns::ModelPtr model = _scene.createModel();
+        for(const auto& node : nodes)
+            node->addToModel(*model);
+        model->updateBounds();
+
+        // Add simulation handler
+        if(simulation)
+        {
+            model->setSimulationHandler(simulation->createSimulationHandler(nodeSelection));
+            SetSONATATransferFunction(_scene.getTransferFunction());
+        }
+
+        // Create descriptor
+        brayns::ModelMetadata metadata = {
+            {"Report", loadConfig.simulationPath},
+            {"Node Sets", brayns::string_utils::join(loadConfig.nodeSets, ",")},
+            {"Number of neurons", std::to_string(nodeSelection.flatSize())},
+            {"Circuit Path", path}
+        };
+
+        brayns::ModelDescriptorPtr& modelDescriptor = result[i];
+        brayns::Transformation transformation;
+        transformation.setRotationCenter(model->getBounds().getCenter());
+        modelDescriptor =
+            std::make_shared<brayns::ModelDescriptor>(std::move(model), "Circuit",
+                                                      path,
+                                                      metadata);
+        modelDescriptor->setTransformation(transformation);
     }
 
     return result;
-
-    return {};
 }
-
-} // namespace sonata

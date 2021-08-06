@@ -21,26 +21,55 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include <cstdint>
+#include <string>
 
-class SonataNGVLoader : public AbstractCircuitLoader
+enum class SimulationType : uint8_t
 {
-public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    NONE = 0,
+    SPIKES = 1,
+    REPORT = 2,
+    SUMMATION = 3,
+    SYNAPSE = 4,
+    BLOODFLOW = 5
+};
 
-    std::string getName() const final;
+inline std::string simulationTypeToString(const SimulationType type) noexcept
+{
+    switch(type)
+    {
+    case SimulationType::SPIKES:
+        return "Spikes";
+    case SimulationType::REPORT:
+        return "Compartment";
+    case SimulationType::SUMMATION:
+        return "Summation";
+    case SimulationType::SYNAPSE:
+        return "Synapse";
+    case SimulationType::BLOODFLOW:
+        return "Bloodflow";
+    default:
+        return "Unknown";
+    }
+}
 
-    static brayns::PropertyMap getCLIProperties();
+enum class MorphologySection : uint8_t
+{
+    ALL = 0,
+    SOMA = 1,
+    AXON = 2,
+    DENDRITE = 3,
+    APICAL_DENDRITE = 4
+};
 
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+enum class VasculatureSection : uint8_t
+{
+    ALL = 0,
+    VEIN = 1,
+    ARTERY = 2,
+    VENULE = 3,
+    ARTERIOLE = 4,
+    VENOUS_CAPILLARY = 5,
+    ARTERIAL_CAPILLARY = 6,
+    TRANSITIONAL = 7
 };

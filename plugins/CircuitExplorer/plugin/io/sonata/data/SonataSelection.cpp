@@ -26,10 +26,6 @@
 
 #include <random>
 
-namespace sonata
-{
-namespace data
-{
 NodeSelection::NodeSelection()
  : _nodeSetsSelection({})
  , _nodeListSelection({})
@@ -38,11 +34,10 @@ NodeSelection::NodeSelection()
 }
 
 void NodeSelection::select(const bbp::sonata::CircuitConfig& config,
-                             const std::string& population,
-                             const std::vector<std::string>& nodeSets)
+                           const std::string& population,
+                           const std::vector<std::string>& nodeSets)
 {
     const auto nodePopulation = config.getNodePopulation(population);
-    _nodeSetsSelection = nodePopulation.selectAll();
 
     if(!nodeSets.empty())
     {
@@ -53,6 +48,8 @@ void NodeSelection::select(const bbp::sonata::CircuitConfig& config,
             _nodeSetsSelection = _nodeListSelection & newSelection;
         }
     }
+    else
+        _nodeSetsSelection = nodePopulation.selectAll();
 }
 
 void NodeSelection::select(const std::vector<uint64_t>& nodeList)
@@ -138,7 +135,4 @@ void EdgeSelection::select(const bbp::sonata::CircuitConfig& config,
 const bbp::sonata::Selection& EdgeSelection::selection() const noexcept
 {
     return _selection;
-}
-
-}
 }

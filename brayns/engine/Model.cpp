@@ -314,7 +314,7 @@ bool Model::isDirty() const
 void Model::setMaterialsColorMap(const MaterialsColorMap colorMap)
 {
     size_t index = 0;
-    for (auto material : _materials)
+    for (auto& material : _materials)
     {
         material.second->setSpecularColor(Vector3f(0.f));
         material.second->setOpacity(1.f);

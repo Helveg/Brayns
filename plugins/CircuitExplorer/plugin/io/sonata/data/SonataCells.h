@@ -25,10 +25,7 @@
 
 #include <brayns/common/mathTypes.h>
 
-namespace sonata
-{
-namespace data
-{
+
 /**
  * @brief The SonataCells class is in charge of quering cell information from the
  *        node network files
@@ -99,5 +96,3 @@ public:
     std::vector<uint32_t> getVasculatureSegmentIds(const Nodes& nodes,
                                                    const Selection& selection);
 };
-} // namespace data
-} // namespace sonata

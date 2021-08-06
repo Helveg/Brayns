@@ -21,17 +21,14 @@
 
 #pragma once
 
+#include "SonataLoaderTypes.h"
+
 #include <brayns/common/PropertyMap.h>
 
 #include <bbp/sonata/config.h>
 
-#include "../morphology/MorphologyTypes.h"
-#include "data/SonataTypes.h"
-
 #include <unordered_set>
 
-namespace sonata
-{
 const brayns::Property PROPERTY_NODEPOPULATIONS = {
             "NodePopulations",
             std::vector<std::string>(),
@@ -59,9 +56,9 @@ const brayns::Property PROPERTY_NODEIDS = {
 const brayns::Property PROPERTY_NODESIMULATIONTYPE = {
             "NodeSimulationType",
             std::vector<std::string>(),
-            {"List of simulation types to load (will be used to interpret the files specified by "
-             "NodeSimulationFilePath). Possible values: 0 (do not load simulation), 1 (spikes), "
-             "2 (soma/full compartment)"}
+            {"List of simulation types numeric ID to load (will be used to interpret the files "
+             "specified by NodeSimulationFilePath). Possible values: 0 (none), 1 (spike), "
+             "2 (compartment), 3 (summation), 4 (synapse) or 5 (bloodflow)"}
         };
 
 const brayns::Property PROPERTY_NODESIMULATIONFILEPATH = {
@@ -96,8 +93,8 @@ const brayns::Property PROPERTY_SYNAPSEPERCENTAGE = {
 const brayns::Property PROPERTY_MORPHOLOGYPARTS = {
             "MorphologySectionTypes",
             std::vector<std::string>(),
-            {"A comma separated list of values that represent sections of the morphology "
-             "to load (0 = soma, 1 = axons, 2 = dendrites, 3 = apical dendrites)"}
+            {"A comma separated list of numeric values that represent sections of the morphology "
+             "to load (0 = soma, 1 = axon, 2 = basal dendrite, 3 = apical dendrite)"}
         };
 
 const brayns::Property PROPERTY_MORPHOLOGYRADIUSMULT = {
@@ -113,6 +110,14 @@ const brayns::Property PROPERTY_MORPHOLOGYLOADMODE = {
              "'vanilla' (as read from disk), "
              "'smooth', (samples radii is adjusted for a smooth result) "
              "'samples' (each sample is represented with a sphere)"}
+        };
+
+const brayns::Property PROPERTY_VASCULATUREPARTS = {
+            "VasculatureTypes",
+            std::vector<std::string>(),
+            {"A comma separated list of numeric values that represent sections of the vasculature "
+             "to load (0 = all, 1 = vein, 2 = artery, 3 = venule, 4 = arteroile, "
+             "5 = venous-capillary, 6 = arterial-capillary, 7 = transitional)"}
 };
 
 /**
@@ -125,14 +130,15 @@ struct PopulationLoadConfig
     float percentage;
     std::vector<uint64_t> nodeIds;
     std::vector<std::string> nodeSets;
-    sonata::data::SimulationType simulationType;
+    SimulationType simulationType;
     std::string simulationPath;
     std::vector<std::string> afferentPopulations;
     std::vector<std::string> efferentPopulations;
     float edgePercentage;
     float morphologyRadius;
-    std::unordered_set<morphology::SectionType> morphologySections;
+    std::unordered_set<MorphologySection> morphologySections;
     std::string morphologyMode;
+    std::unordered_set<VasculatureSection> vasculatureSections;
 };
 
 /**
@@ -148,11 +154,7 @@ public:
 
     static brayns::PropertyMap getPropertyList() noexcept;
 
-    const std::vector<PopulationLoadConfig>& nodePopulations() const noexcept;
+    const std::vector<PopulationLoadConfig>& getRequestedPopulations() const noexcept;
 private:
-
     std::vector<PopulationLoadConfig> _nodePopulations;
-    std::unordered_set<morphology::SectionType> _morphologySections;
-    double _morphologyRadius;
 };
-}

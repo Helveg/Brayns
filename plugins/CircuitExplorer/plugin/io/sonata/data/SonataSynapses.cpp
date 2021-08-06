@@ -25,190 +25,141 @@
 #include <map>
 #include <random>
 
-namespace sonata
-{
-namespace data
-{
 namespace
 {
-constexpr char attribEffSectionId[] = "efferent_section_id";
-constexpr char attribEffSegmentId[] = "efferent_segment_id";
-constexpr char attribEffSurfPosiX[] = "efferent_surface_x";
-constexpr char attribEffSurfPosiY[] = "efferent_surface_y";
-constexpr char attribEffSurfPosiZ[] = "efferent_surface_z";
+constexpr char attribEffSectionId[]     = "efferent_section_id";
+constexpr char attribEffSegmentId[]     = "efferent_segment_id";
+constexpr char attribEffSegmentPos[]    = "efferent_section_pos";
+constexpr char attribEffSurfPosiX[]     = "efferent_surface_x";
+constexpr char attribEffSurfPosiY[]     = "efferent_surface_y";
+constexpr char attribEffSurfPosiZ[]     = "efferent_surface_z";
 
-constexpr char attribAffSectionId[] = "afferent_section_id";
-constexpr char attribAffSegmentId[] = "afferent_segment_id";
-constexpr char attribAffSurfPosiX[] = "afferent_surface_x";
-constexpr char attribAffSurfPosiY[] = "afferent_surface_y";
-constexpr char attribAffSurfPosiZ[] = "afferent_surface_z";
+constexpr char attribAffSectionId[]     = "afferent_section_id";
+constexpr char attribAffSegmentId[]     = "afferent_segment_id";
+constexpr char attribAffSegmentPos[]    = "afferent_section_pos";
+constexpr char attribAffSurfPosiX[]     = "afferent_surface_x";
+constexpr char attribAffSurfPosiY[]     = "afferent_surface_y";
+constexpr char attribAffSurfPosiZ[]     = "afferent_surface_z";
 
-bbp::sonata::Selection computePercentage(const bbp::sonata::Selection& src, const float percent)
+void checkEdgeParameters(const bbp::sonata::EdgePopulation& population,
+                         const std::vector<const char*>& inputAttribs)
 {
-    auto commonList = src.flatten();
-
-    std::random_device randomDevice;
-    std::mt19937_64 randomEngine(randomDevice());
-    std::shuffle(commonList.begin(), commonList.end(), randomEngine);
-    const size_t finalSize = static_cast<size_t>(
-                static_cast<double>(percent) * static_cast<double>(commonList.size()));
-    commonList.resize(finalSize);
-    std::sort(commonList.begin(), commonList.end());
-
-    return bbp::sonata::Selection::fromValues(commonList);
-}
-
-}
-
-// post synaptic surface position
-std::vector<std::vector<Synapse>>
-SonataSynapses::getAfferent(const bbp::sonata::EdgePopulation& population,
-                            const bbp::sonata::Selection& selection,
-                            const float percentage)
-{
-    return loadSynapses(attribAffSectionId,
-                        attribAffSegmentId,
-                        attribAffSurfPosiX,
-                        attribAffSurfPosiY,
-                        attribAffSurfPosiZ,
-                        selection,
-                        population,
-                        percentage,
-                        true);
-}
-
-// pre synaptic surface position
-std::vector<std::vector<Synapse>>
-SonataSynapses::getEfferent(const bbp::sonata::EdgePopulation& population,
-                            const bbp::sonata::Selection& selection,
-                            const float percentage)
-{
-    return loadSynapses(attribEffSectionId,
-                        attribEffSegmentId,
-                        attribEffSurfPosiX,
-                        attribEffSurfPosiY,
-                        attribEffSurfPosiZ,
-                        selection,
-                        population,
-                        percentage,
-                        false);
-}
-
-std::vector<std::vector<Synapse>>
-SonataSynapses::loadSynapses(const char* sectionAttrib,
-                             const char* segmentAttrib,
-                             const char* posXAttrib,
-                             const char* posYAttrib,
-                             const char* posZAttrib,
-                             const bbp::sonata::Selection& selection,
-                             const bbp::sonata::EdgePopulation& population,
-                             const float percentage,
-                             const bool afferent)
-{
-    const std::vector<const char*> attribCheck =
-    {
-        sectionAttrib,
-        segmentAttrib,
-        posXAttrib,
-        posYAttrib,
-        posZAttrib
-    };
     const auto& attribs = population.attributeNames();
-    for(const auto& attribute : attribCheck)
+    for(const auto& attribute : inputAttribs)
     {
         if(attribs.find(attribute) == attribs.end())
             throw std::runtime_error("Edge population " + population.name()
                                      + " is missing attribute " + attribute);
     }
+}
 
-    const auto sourceNodeIds = selection.flatten();
-    // Use an ordered map to map each node Id to its synapses, so that in the end
-    // we can return a vector of vectors ordered by ascending node Id, which we will
-    // use to access cell specific synapses in O(1) by using its index
-    // (Cell index represents its position on a vector based on its ordered node Id value)
-    std::map<uint64_t, std::vector<Synapse>> mapping;
-    for(size_t i = 0; i < sourceNodeIds.size(); ++i)
-        mapping[sourceNodeIds[i]] = std::vector<Synapse>();
+inline std::vector<brayns::Vector3f> loadSurfacePos(const bbp::sonata::EdgePopulation& population,
+                                                    const bbp::sonata::Selection& selection,
+                                                    const char* attribX,
+                                                    const char* attribY,
+                                                    const char* attribZ)
+{
+    checkEdgeParameters(population, {attribX, attribY, attribZ});
+    const auto surfaPosXs = population.getAttribute<float>(attribX, selection);
+    const auto surfaPosYs = population.getAttribute<float>(attribY, selection);
+    const auto surfaPosZs = population.getAttribute<float>(attribZ, selection);
 
+    if(surfaPosXs.size() != surfaPosYs.size() || surfaPosXs.size() != surfaPosZs.size())
+        throw std::runtime_error("Edge population '" + population.name() + "' surface position "
+                                 "parameters missmatch in size");
 
-    const bbp::sonata::Selection baseSelection = afferent? population.afferentEdges(sourceNodeIds)
-                                                         : population.efferentEdges(sourceNodeIds);
-    const bbp::sonata::Selection edgeSelection = computePercentage(baseSelection, percentage);
-
-    const auto flattenEdges = edgeSelection.flatten();
-    auto preNodeIds =  population.sourceNodeIDs(edgeSelection);
-    auto postNodeIds = population.targetNodeIDs(edgeSelection);
-
-    if(afferent)
-        preNodeIds.swap(postNodeIds);
-
-    const auto sectionIds = population.getAttribute<int32_t>(sectionAttrib, edgeSelection);
-    const auto surfaPosXs = population.getAttribute<float>(posXAttrib, edgeSelection);
-    const auto surfaPosYs = population.getAttribute<float>(posYAttrib, edgeSelection);
-    const auto surfaPosZs = population.getAttribute<float>(posZAttrib, edgeSelection);
-
-    const auto size = flattenEdges.size();
-
-    if(sectionIds.size() != size || surfaPosXs.size() != size
-            || surfaPosYs.size() != size || surfaPosZs.size() != size)
-        throw std::runtime_error("Edge population " + population.name() + " attributes size "
-                                 "does have different sizes for the same selection");
-
-    for(size_t i = 0; i < size; ++i)
+    std::vector<brayns::Vector3f> result (surfaPosXs.size(), brayns::Vector3f(0.f, 0.f, 0.f));
+    for(size_t i = 0; i < surfaPosXs.size(); ++i)
     {
-        auto& cellSynapseBuffer = mapping[preNodeIds[i]];
-        cellSynapseBuffer.push_back(Synapse(sectionIds[i],
-                                            flattenEdges[i],
-                                            brayns::Vector3f(surfaPosXs[i],
-                                                             surfaPosYs[i],
-                                                             surfaPosZs[i])));
+        result[i].x = surfaPosXs[i];
+        result[i].y = surfaPosYs[i];
+        result[i].z = surfaPosZs[i];
     }
-
-    std::vector<std::vector<Synapse>> result (sourceNodeIds.size());
-    size_t i = 0;
-    for(auto& entry : mapping)
-        result[i++] = std::move(entry.second);
     return result;
+}
+
+inline void fixSections(std::vector<int32_t>& sectionIds)
+{
+    std::transform(sectionIds.begin(), sectionIds.end(), sectionIds.begin(), [](int32_t secId)
+    {
+        return secId - 1;
+    });
+}
 }
 
 
 std::vector<uint64_t> SonataSynapses::getAfferentSourceNodes(const Edges& population,
                                                              const Selection& selection)
 {
-
+    return population.sourceNodeIDs(selection);
 }
 
 std::vector<uint64_t> SonataSynapses::getAfferentTargetNodes(const Edges& population,
                                                              const Selection& selection)
 {
-
+    return population.targetNodeIDs(selection);
 }
 
 std::vector<uint64_t> SonataSynapses::getEfferentSourceNodes(const Edges& population,
                                                              const Selection& selection)
 {
-
+    return population.sourceNodeIDs(selection);
 }
 
 std::vector<uint64_t> SonataSynapses::getEfferentTargetNodes(const Edges& population,
                                                              const Selection& selection)
 {
-
+    return population.targetNodeIDs(selection);
 }
 
-
-std::vector<int32_t> SonataSynapses::getSectionIds(const Edges& population,
-                                                   const Selection& selection)
+std::vector<int32_t> SonataSynapses::getAfferentSectionIds(const Edges& population,
+                                                           const Selection& selection)
 {
-
+    checkEdgeParameters(population, {attribAffSectionId});
+    auto sectionIds = population.getAttribute<int32_t>(attribAffSectionId, selection);
+    fixSections(sectionIds);
+    return sectionIds;
 }
 
-
-std::vector<brayns::Vector3f> SonataSynapses::getSurfacePos(const Edges& population,
-                                                            const Selection& selection)
+std::vector<int32_t> SonataSynapses::getEfferentSectionIds(const Edges& population,
+                                                           const Selection& selection)
 {
-
+    checkEdgeParameters(population, {attribEffSectionId});
+    auto sectionIds = population.getAttribute<int32_t>(attribEffSectionId, selection);
+    fixSections(sectionIds);
+    return sectionIds;
 }
 
-} // namespace data
-} // namespace sonata
+std::vector<brayns::Vector3f> SonataSynapses::getAfferentSurfacePos(const Edges& population,
+                                                                    const Selection& selection)
+{
+    return loadSurfacePos(population,
+                          selection,
+                          attribAffSurfPosiX,
+                          attribAffSurfPosiY,
+                          attribAffSurfPosiZ);
+}
+
+std::vector<brayns::Vector3f> SonataSynapses::getEfferentSurfacePos(const Edges& population,
+                                                                    const Selection& selection)
+{
+    return loadSurfacePos(population,
+                          selection,
+                          attribEffSurfPosiX,
+                          attribEffSurfPosiY,
+                          attribEffSurfPosiZ);
+}
+
+std::vector<float> SonataSynapses::getAfferentSectionDistances(const Edges& population,
+                                                               const Selection& selection)
+{
+    checkEdgeParameters(population, {attribAffSegmentPos});
+    return population.getAttribute<float>(attribAffSegmentPos, selection);
+}
+
+std::vector<float> SonataSynapses::getEfferentSectionDistances(const Edges& population,
+                                                               const Selection& selection)
+{
+    checkEdgeParameters(population, {attribEffSegmentPos});
+    return population.getAttribute<float>(attribEffSegmentPos, selection);
+}

@@ -1,6 +1,5 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
  * This file is part of the circuit explorer for Brayns
  * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
@@ -21,26 +20,27 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "Morphology.h"
+#include "MorphologyInstance.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+#include <plugin/api/CellMapper.h>
+
+#include <brayns/common/geometry/SDFGeometry.h>
+#include <brayns/common/types.h>
+
+/**
+ * @brief The MorphologyGeometryBuilder class is the base class to implement
+ *        geometry builders that transform the Morphology object into a set
+ *        of 3D shapes that are renderable. The result then is instantiated
+ *        acording to each cell properties (position and rotation)
+ */
+class MorphologyGeometryBuilder
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    virtual ~MorphologyGeometryBuilder() = default;
 
-    std::string getName() const final;
+    virtual void build(const Morphology&) = 0;
 
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    virtual std::unique_ptr<MorphologyInstance> instantiate(const brayns::Vector3f&,
+                                                            const brayns::Quaternion&) const = 0;
 };

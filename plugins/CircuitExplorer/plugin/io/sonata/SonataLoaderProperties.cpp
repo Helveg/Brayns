@@ -6,8 +6,6 @@
 
 #include <boost/filesystem.hpp>
 
-namespace sonata
-{
 namespace
 {
 using string_list = std::vector<std::string>;
@@ -135,7 +133,7 @@ void checkMorphologyParts(const brayns::PropertyMap& props,
             }
             catch(const std::invalid_argument& e) {}
 
-            if(partIndex > 3)
+            if(partIndex > 4)
                 throw std::invalid_argument("Unknown morphology part index to load '"
                                             + partIndexStr + "'");
         }
@@ -198,17 +196,18 @@ void checkSimulation(const brayns::PropertyMap& props,
         throw std::invalid_argument("A list of node simulation types must be specified "
                                     "for each population");
 
-    std::vector<sonata::data::SimulationType> types;
+    std::vector<SimulationType> types;
     types.reserve(numNodes);
     for(const auto& simTypeStr : simTypes)
     {
         try
         {
             auto test = static_cast<uint8_t>(std::stoul(simTypeStr));
-            if(test > 2)
-                throw std::invalid_argument("Simulation type is out of the possible values "
-                                            "(0, 1, or 2)");
-            types.push_back(static_cast<sonata::data::SimulationType>(test));
+            if(test > 5)
+                throw std::invalid_argument("Simulation type is out of the possible values: "
+                                            "0 (none), 1 (spikes), 2 (soma/compartment), "
+                                            "3 (sumation)), 4 (synapse), 5 (bloodflow)");
+            types.push_back(static_cast<SimulationType>(test));
         }
         catch (const std::exception& e)
         {
@@ -224,9 +223,36 @@ void checkSimulation(const brayns::PropertyMap& props,
                                     "simulation type is 0 = None)");
     for(size_t i = 0; i < simPaths.size(); ++i)
     {
-        if(types[i] != sonata::data::SimulationType::NONE && (simPaths.empty() ||
+        if(types[i] != SimulationType::NONE && (simPaths.empty() ||
                 !boost::filesystem::exists(simPaths[i])))
             throw std::invalid_argument("Cannot find simulation file " + simPaths[i]);
+    }
+}
+
+void checkVasculature(const brayns::PropertyMap& props,
+                      const size_t numNodes)
+{
+    const auto& vascParts = props.getPropertyRef<string_list>(PROPERTY_VASCULATUREPARTS.name);
+    if(vascParts.size() != numNodes)
+        throw std::invalid_argument("A comma-separated list of vasculature parts must be specified, "
+                                    "one per population (or an empty string to load all)");
+
+    for(const auto& part : vascParts)
+    {
+        string_list partTokens = brayns::string_utils::split(part, ',');
+        for(const auto& partIndexStr : partTokens)
+        {
+            uint32_t partIndex = std::numeric_limits<uint32_t>::max();
+            try
+            {
+                partIndex = std::stoi(partIndexStr);
+            }
+            catch(const std::invalid_argument& e) {}
+
+            if(partIndex > 7)
+                throw std::invalid_argument("Unknown vasculature part index to load '"
+                                            + partIndexStr + "'");
+        }
     }
 }
 
@@ -273,6 +299,8 @@ void checkParameters(const bbp::sonata::CircuitConfig& config,
     checkNodeIds(props, numNodePopulations);
     // CHECK REPORTS
     checkSimulation(props, numNodePopulations);
+    // CHECK VASCULATURE
+    checkVasculature(props, numNodePopulations);
 }
 
 template<typename T>
@@ -310,9 +338,16 @@ std::vector<std::vector<T>> parseStringList(const string_list& list, const char 
     {
         const auto& str = list[i];
         auto tokenList = brayns::string_utils::split(str, separator);
+        if(tokenList.empty())
+            continue;
+
         auto& dst = result[i];
-        for(const auto& token : tokenList)
-            dst.push_back(convert<T>(token));
+        dst.resize(tokenList.size(), T());
+        for(size_t j = 0; j < tokenList.size(); ++j)
+        {
+            if(!tokenList[j].empty())
+                dst[j] = convert<T>(tokenList[j]);
+        }
     }
     return result;
 }
@@ -320,9 +355,12 @@ std::vector<std::vector<T>> parseStringList(const string_list& list, const char 
 template<typename T>
 std::vector<T> parseFlatStringList(const string_list& list)
 {
-    std::vector<T> result (list.size());
+    std::vector<T> result (list.size(), T());
     for(size_t i = 0; i < list.size(); ++i)
-        result[i] = convert<T>(list[i]);
+    {
+        if(!list[i].empty())
+            result[i] = convert<T>(list[i]);
+    }
     return result;
 }
 
@@ -378,6 +416,10 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
     const auto& morphologyLoadMode =
             properties.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYLOADMODE.name);
 
+    const auto& vasculatureSectionsRaw =
+            properties.getPropertyRef<string_list>(PROPERTY_VASCULATUREPARTS.name);
+    const auto vasculatureSections = parseStringList<uint8_t>(vasculatureSectionsRaw);
+
     _nodePopulations.resize(populationList.size());
     for(size_t i = 0; i < populationList.size(); ++i)
     {
@@ -386,7 +428,7 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
         pls.nodeIds = nodeIds[i];
         pls.nodeSets = nodeSets[i];
         pls.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
-        pls.simulationType = static_cast<sonata::data::SimulationType>(simTypes[i]);
+        pls.simulationType = static_cast<SimulationType>(simTypes[i]);
         pls.simulationPath = simPaths[i];
         pls.afferentPopulations = afferentPopulations[i];
         pls.efferentPopulations = efferentPopulations[i];
@@ -395,7 +437,10 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
         pls.morphologyMode = morphologyLoadMode[i];
 
         for(const auto morphologyPart : morphologySections[i])
-            pls.morphologySections.insert(static_cast<morphology::SectionType>(morphologyPart));
+            pls.morphologySections.insert(static_cast<MorphologySection>(morphologyPart));
+
+        for(const auto vasculaturePart : vasculatureSections[i])
+            pls.vasculatureSections.insert(static_cast<VasculatureSection>(vasculaturePart));
     }
 }
 
@@ -406,15 +451,20 @@ brayns::PropertyMap SonataLoaderProperties::getPropertyList() noexcept
     props.setProperty(PROPERTY_NODESETS);
     props.setProperty(PROPERTY_NODEPERCENTAGE);
     props.setProperty(PROPERTY_NODEIDS);
+    props.setProperty(PROPERTY_NODESIMULATIONTYPE);
+    props.setProperty(PROPERTY_NODESIMULATIONTYPE);
     props.setProperty(PROPERTY_AFFERENTPOPULATIONS);
     props.setProperty(PROPERTY_EFFERENTPOPULATIONS);
+    props.setProperty(PROPERTY_SYNAPSEPERCENTAGE);
+    props.setProperty(PROPERTY_MORPHOLOGYLOADMODE);
     props.setProperty(PROPERTY_MORPHOLOGYPARTS);
     props.setProperty(PROPERTY_MORPHOLOGYRADIUSMULT);
+    props.setProperty(PROPERTY_VASCULATUREPARTS);
     return props;
 }
 
-const std::vector<PopulationLoadConfig>& SonataLoaderProperties::nodePopulations() const noexcept
+const std::vector<PopulationLoadConfig>&
+SonataLoaderProperties::getRequestedPopulations() const noexcept
 {
     return _nodePopulations;
-}
 }

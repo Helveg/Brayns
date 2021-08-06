@@ -23,11 +23,6 @@
 
 #include <brayns/common/loader/Loader.h>
 
-class CircuitExplorerPlugin;
-
-namespace sonata
-{
-
 /**
  * @brief Imports one or multiple node and edge SONATA populations into Brayns
  */
@@ -37,7 +32,7 @@ public:
     /**
      * @brief Constructor
      */
-    SonataLoader(brayns::Scene& scene, CircuitExplorerPlugin* pluginPtr);
+    SonataLoader(brayns::Scene& scene);
 
     /**
      * @brief getSupportedExtensions returns a list with supported file extensions
@@ -77,9 +72,4 @@ public:
     importFromFile(const std::string& path,
                    const brayns::LoaderProgress& callback,
                    const brayns::PropertyMap& properties) const final;
-
-private:
-    // Source plugin to which we will register the the neuron <-> brayns geometry mapping
-    CircuitExplorerPlugin* _pluginPtr {nullptr};
 };
-}

@@ -21,26 +21,15 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../SonataSimulation.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+class CompartmentSimulation : public SonataSimulation
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    CompartmentSimulation(const std::string& path, const std::string& population);
 
-    std::string getName() const final;
+    std::vector<CellMapping> loadMapping(const bbp::sonata::Selection&) const final;
 
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    brayns::AbstractSimulationHandlerPtr
+    createSimulationHandler(const bbp::sonata::Selection&) const final;
 };

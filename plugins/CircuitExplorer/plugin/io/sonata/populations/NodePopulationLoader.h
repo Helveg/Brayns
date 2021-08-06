@@ -21,26 +21,38 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include <brayns/common/loader/Loader.h>
+#include <brayns/engine/Model.h>
 
-class SonataNGVLoader : public AbstractCircuitLoader
+#include <bbp/sonata/config.h>
+
+#include "../morphology/MorphologyInstance.h"
+#include "../simulations/SonataSimulation.h"
+
+#include "../SonataLoaderProperties.h"
+
+class NodePopulationLoader
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    NodePopulationLoader(bbp::sonata::NodePopulation&& population,
+                         bbp::sonata::PopulationProperties&& properties)
+     : _population(std::move(population))
+     , _populationProperties(std::move(properties))
+    {
+    }
 
-    std::string getName() const final;
+    virtual ~NodePopulationLoader() = default;
 
-    static brayns::PropertyMap getCLIProperties();
 
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
+    virtual std::vector<MorphologyInstancePtr>
+    load(const PopulationLoadConfig& loadSettings,
+         const bbp::sonata::Selection& nodeSelection,
+         const brayns::LoaderProgress& updateCb) const = 0;
 
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+protected:
+    bbp::sonata::NodePopulation _population;
+    bbp::sonata::PopulationProperties _populationProperties;
 };
+
+using NodePopulationLoaderPtr = std::unique_ptr<NodePopulationLoader>;
+

@@ -1,6 +1,5 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
  * This file is part of the circuit explorer for Brayns
  * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
@@ -21,26 +20,22 @@
 
 #pragma once
 
-#include "../AbstractCircuitLoader.h"
+#include "../MorphologyInstance.h"
 
-class SonataNGVLoader : public AbstractCircuitLoader
+/**
+ * @brief The PrimitiveMorphologyInstance class represents a cell 3D shape based
+ *        on spheres, cones and cylinders
+ */
+class PrimitiveMorphologyInstance : public MorphologyInstance
 {
 public:
-    SonataNGVLoader(brayns::Scene &scene,
-                 const brayns::ApplicationParameters &applicationParameters,
-                 brayns::PropertyMap &&loaderParams,
-                 CircuitExplorerPlugin* plugin);
+    /*
+    void transform(const brayns::Vector3f& translation,
+                   const brayns::Quaternion& rotation) final;*/
 
-    std::string getName() const final;
+    void mapSimulation(const size_t globalOffset,
+                       const std::vector<uint16_t>& sectionOffsets,
+                       const std::vector<uint16_t>& sectionCompartments) final;
 
-    static brayns::PropertyMap getCLIProperties();
-
-    std::vector<brayns::ModelDescriptorPtr> importFromFile(
-        const std::string &filename, const brayns::LoaderProgress &callback,
-        const brayns::PropertyMap &properties) const final;
-
-private:
-    std::vector<brayns::ModelDescriptorPtr>
-    _loadFromBlueConfig(const std::string& file, const brayns::LoaderProgress& cb,
-                        const brayns::PropertyMap& props) const;
+    CellGeometryMap addToModel(brayns::Model& model) const final;
 };
