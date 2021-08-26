@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -21,11 +18,12 @@
 
 #include "CommonEdgePopulationLoader.h"
 
-#include "../../data/SonataSynapses.h"
+#include <plugin/io/sonata/data/SonataSynapses.h>
+#include <plugin/io/sonata/synapse/groups/SurfaceSynapseGroup.h>
 
 #include <common/log.h>
 
-std::vector<std::vector<SynapseInfo>>
+std::vector<std::unique_ptr<SynapseGroup>>
 CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
                                  const bbp::sonata::Selection& nodeSelection,
                                  const bool afferent) const
@@ -34,55 +32,49 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
 
     // Fill it by mapping node ID to synapse list in case there is a node Id without synapses,
     // so we can still place an empty vector at the end
-    std::map<uint64_t, std::vector<SynapseInfo>> mapping;
+    std::map<uint64_t, std::unique_ptr<SynapseGroup>> mapping;
     for(const auto nodeId : baseNodeList)
-        mapping[nodeId] = std::vector<SynapseInfo>();
+        mapping[nodeId] = std::make_unique<SurfaceSynapseGroup>();
 
-    std::vector<uint64_t> srcNodes, targetNodes;
+    std::vector<uint64_t> srcNodes;
     std::vector<int32_t> sectionIds;
-    //std::vector<float> distances;
+    std::vector<float> distances;
     std::vector<brayns::Vector3f> surfacePos;
     std::vector<uint64_t> edgeIds;
-
-    PLUGIN_WARN << "EDGE ATTRIBUTE [afferent|efferent]_section_pos DISABLED" << std::endl;
 
     if(afferent)
     {
         const auto edgeSelection = _population.afferentEdges(baseNodeList);
         edgeIds = edgeSelection.flatten();
         srcNodes = SonataSynapses::getAfferentTargetNodes(_population, edgeSelection);
-        targetNodes = SonataSynapses::getAfferentSourceNodes(_population, edgeSelection);
         sectionIds = SonataSynapses::getAfferentSectionIds(_population, edgeSelection);
         surfacePos = SonataSynapses::getAfferentSurfacePos(_population, edgeSelection);
-        //distances = SonataSynapses::getAfferentSectionDistances(_population, edgeSelection);
+        distances = SonataSynapses::getAfferentSectionDistances(_population, edgeSelection);
     }
     else
     {
         const auto edgeSelection = _population.efferentEdges(baseNodeList);
         edgeIds = edgeSelection.flatten();
         srcNodes = SonataSynapses::getEfferentSourceNodes(_population, edgeSelection);
-        targetNodes = SonataSynapses::getEfferentTargetNodes(_population, edgeSelection);
         surfacePos = SonataSynapses::getEfferentSurfacePos(_population, edgeSelection);
         sectionIds = SonataSynapses::getEfferentSectionIds(_population, edgeSelection);
-        //distances = SonataSynapses::getEfferentSectionDistances(_population, edgeSelection);
+        distances = SonataSynapses::getEfferentSectionDistances(_population, edgeSelection);
     }
 
-    if(srcNodes.size() != targetNodes.size() || srcNodes.size() != sectionIds.size()
-            || srcNodes.size() != surfacePos.size())
+    if(srcNodes.size() != sectionIds.size() || srcNodes.size() != surfacePos.size()
+            || srcNodes.size() != distances.size())
         throw std::runtime_error("Edge population '" + _population.name()
                                  + "' attributes missmatch in size");
 
     // Group data by node id
     for(size_t i = 0; i < srcNodes.size(); ++i)
     {
-        auto& buffer = mapping[srcNodes[i]];
-        //buffer.push_back({edgeIds[i], sectionIds[i], distances[i], surfacePos[i]});
-        // XXXXXXXXXXXXXXXXXXXXXXXX
-        buffer.push_back({edgeIds[i], sectionIds[i], 0.f, surfacePos[i]});
+        auto& buffer = static_cast<SurfaceSynapseGroup&>(*mapping[srcNodes[i]].get());
+        buffer.addSynapse(edgeIds[i], sectionIds[i], distances[i], surfacePos[i]);
     }
 
     // Flatten
-    std::vector<std::vector<SynapseInfo>> synapses (baseNodeList.size());
+    std::vector<std::unique_ptr<SynapseGroup>> synapses (baseNodeList.size());
     for(size_t i = 0; i < baseNodeList.size(); ++i)
     {
         auto it = mapping.find(baseNodeList[i]);

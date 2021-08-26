@@ -1,68 +1,120 @@
-#include "SonataLoaderProperties.h"
+/* Copyright (c) 2015-2021, EPFL/Blue Brain Project
+ * All rights reserved. Do not distribute without permission.
+ * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
+ *
+ * This library is free software; you can redistribute it and/or modify it under
+ * the terms of the GNU Lesser General Public License version 3.0 as published
+ * by the Free Software Foundation.
+ *
+ * This library is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+ * FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
+ * details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this library; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+ */
 
-#include <brayns/common/utils/stringUtils.h>
+#include "SonataLoaderProperties.h"
 
 #include <bbp/sonata/node_sets.h>
 
 #include <boost/filesystem.hpp>
 
+#include <brayns/common/utils/stringUtils.h>
+
 namespace
 {
 using string_list = std::vector<std::string>;
-
-/**
- * @brief Checks the sanity of the parameter to configure the loading of edge populations
- */
-void checkEdgePopulation(const bbp::sonata::CircuitConfig& config,
-                         const brayns::PropertyMap& props,
-                         const size_t numNodes,
-                         const std::string& property,
-                         const std::string& debugName)
-{
-    // CHECK AFFERENT AND EFFERENT EDGE POPULATIONS
-    const auto diskEdgePopulations = config.listEdgePopulations();
-    const auto& edgePops = props.getPropertyRef<string_list>(property);
-    if(edgePops.size() != numNodes)
-        throw std::invalid_argument("A comma-separated list of " + debugName + " edge populations"
-                                    " must be specified, one per population (or an empty string)");
-    for(const auto& edgePopList : edgePops)
-    {
-        const auto edgePopTokens = brayns::string_utils::split(edgePopList, ',');
-        const std::unordered_set<std::string> uniqueEdgePopTokens (edgePopTokens.begin(),
-                                                                       edgePopTokens.end());
-        for(const auto& name : uniqueEdgePopTokens)
-        {
-            if(diskEdgePopulations.find(name) == diskEdgePopulations.end())
-                throw std::invalid_argument(debugName + " edge population '" + name
-                                            + "' not found in network");
-        }
-    }
-}
 
 void checkEdges(const bbp::sonata::CircuitConfig& config,
                 const brayns::PropertyMap& props,
                 const size_t numNodes)
 {
-    // CHECK AFFERENT/EFFERENT
-    checkEdgePopulation(config,
-                        props,
-                        numNodes,
-                        PROPERTY_AFFERENTPOPULATIONS.name,
-                        "afferent");
-    checkEdgePopulation(config,
-                        props,
-                        numNodes,
-                        PROPERTY_EFFERENTPOPULATIONS.name,
-                        "efferent");
+    const auto diskEdgePopulations = config.listEdgePopulations();
+    const auto& edgePops = props.getPropertyRef<string_list>(PROPERTY_EDGEPOPULATIONS.name);
+    if(edgePops.size() != numNodes)
+        throw std::invalid_argument("A comma-separated list of edge populations must be "
+                                    "specified, one per population (or an empty string)");
 
-    const auto& edgePercents = props.getPropertyRef<string_list>(PROPERTY_SYNAPSEPERCENTAGE.name);
+    const auto& edgePercents = props.getPropertyRef<string_list>(PROPERTY_EDGEPERCENTAGES.name);
     if(edgePercents.size() != numNodes)
-        throw std::invalid_argument("A list of synapse load percentage must be specified, "
-                                    "one per population (must be greather than or equal to 0)");
-    for(const auto& percent : edgePercents)
+        throw std::invalid_argument("A comma-separated list of edge percentages must "
+                                    "be specified, one per population");
+
+    const auto& edgeModes = props.getPropertyRef<string_list>(PROPERTY_EDGELOADMODES.name);
+    if(edgeModes.size() != numNodes)
+        throw std::invalid_argument("A comma-separated list of edge load modes must "
+                                    "be specified, one per population");
+
+    const auto& edgeSims = props.getPropertyRef<string_list>(PROPERTY_EDGESIMULATIONPATHS.name);
+    if(edgeModes.size() != numNodes)
+        throw std::invalid_argument("A comma-separated list of edge reports must "
+                                    "be specified, one per population (or an empty string)");
+
+    const auto nodePops = props.getPropertyRef<string_list>(PROPERTY_NODEPOPULATIONS.name);
+    for(size_t i = 0; i < edgePops.size(); ++i)
     {
-        if(std::stof(percent) < 0.f)
-            throw std::invalid_argument("Synapse load percentage must be a value between 0 and 1");
+        const auto& edgePopList = edgePops[i];
+        if(edgePopList.empty())
+            continue;
+
+        const auto& edgePercentList = edgePercents[i];
+        const auto& edgeModeList = edgeModes[i];
+        const auto& edgeSimList = edgeSims[i];
+        const auto edgePopTokens = brayns::string_utils::split(edgePopList, ',');
+        const auto edgePercentTokens = brayns::string_utils::split(edgePercentList, ',');
+        const auto edgeModeTokens = brayns::string_utils::split(edgeModeList, ',');
+        const auto edgeSimTokens = brayns::string_utils::split(edgeSimList, ',');
+
+        if(edgePopTokens.size() != edgePercentTokens.size())
+            throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge populations "
+                                        "and edge percentages must match in size");
+        if(edgePopTokens.size() != edgeModeTokens.size())
+            throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge populations "
+                                        "and edge load modes must match in size");
+        if(!edgeSimTokens.empty() && edgePopTokens.size() != edgeSimTokens.size())
+            throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge populations "
+                                        "and edge simulation paths must match in size, or an "
+                                        "empty string must be provided for the edge simulations");
+
+        for(size_t j = 0; j < edgePopTokens.size(); ++j)
+        {
+            const auto& name = edgePopTokens[j];
+
+            if(diskEdgePopulations.find(name) == diskEdgePopulations.end())
+                throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
+                                            "population '"+ name +"' not found in network");
+
+            const auto& mode = edgeModeTokens[j];
+            const bool afferent = (mode == "afferent");
+            const bool efferent = (mode == "efferent");
+            if(!afferent && !efferent)
+                throw std::invalid_argument("Node population '" + nodePops[i] + "': Unrecognized "
+                                            "edge load mode '"+ mode +"' (must be 'afferent' or "
+                                            "'efferent'");
+
+            const auto edgePopulation = config.getEdgePopulation(name);
+            if(afferent && edgePopulation.source() != nodePops[i])
+                throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
+                                            "population '" + name + "' does not have node "
+                                            "population '" + nodePops[i] + "' "
+                                            "as source node populations");
+            else if(efferent && edgePopulation.target() != nodePops[i])
+                throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
+                                            "population '" + name + "' does not have node "
+                                            "population '" + nodePops[i] + "' "
+                                            "as target node populations");
+
+            if(!edgeSimTokens.empty())
+            {
+                const auto& edgeSimPath = edgeSimTokens[j];
+                if(!boost::filesystem::exists(edgeSimPath))
+                    throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
+                                                "report " + edgeSimPath + " file not found");
+            }
+        }
     }
 }
 
@@ -116,7 +168,7 @@ void checkNodeSets(const bbp::sonata::CircuitConfig& config,
 void checkMorphologyParts(const brayns::PropertyMap& props,
                           const size_t numNodes)
 {
-    const auto& parts = props.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYPARTS.name);
+    const auto& parts = props.getPropertyRef<string_list>(PROPERTY_NEURONPARTS.name);
     if(parts.size() != numNodes)
         throw std::invalid_argument("A comma-separated list of morphology parts must be specified, "
                                     "one per population (or an empty string to load all)");
@@ -140,7 +192,7 @@ void checkMorphologyParts(const brayns::PropertyMap& props,
     }
 
     const auto& radiusMultiplier = props.getPropertyRef<string_list>(
-                                            PROPERTY_MORPHOLOGYRADIUSMULT.name);
+                                            PROPERTY_RADIUSMULT.name);
     if(radiusMultiplier.size() != numNodes)
         throw std::invalid_argument("A list of morphology radius multiplier must be specified, "
                                     "one per population (must be greather than 0)");
@@ -150,7 +202,7 @@ void checkMorphologyParts(const brayns::PropertyMap& props,
             throw std::runtime_error("Morphology radius multiplier must be a value above 0");
     }
 
-    const auto& loadMode = props.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYLOADMODE.name);
+    const auto& loadMode = props.getPropertyRef<string_list>(PROPERTY_NEURONLOADMODE.name);
     if(loadMode.size() != numNodes)
         throw std::invalid_argument("A list of morphology load modes must be specified, "
                                     "one per population (must be one of the possible values)");
@@ -393,28 +445,32 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
     const auto simPaths =
             properties.getPropertyRef<string_list>(PROPERTY_NODESIMULATIONFILEPATH.name);
 
-    const auto& afferentPopulationsRaw =
-            properties.getPropertyRef<string_list>(PROPERTY_AFFERENTPOPULATIONS.name);
-    const auto afferentPopulations = parseStringList<std::string>(afferentPopulationsRaw);
+    const auto& edgePopulationsRaw =
+            properties.getPropertyRef<string_list>(PROPERTY_EDGEPOPULATIONS.name);
+    const auto edgePopulations = parseStringList<std::string>(edgePopulationsRaw);
 
-    const auto& efferentPopulationsRaw =
-            properties.getPropertyRef<string_list>(PROPERTY_EFFERENTPOPULATIONS.name);
-    const auto efferentPopulations = parseStringList<std::string>(efferentPopulationsRaw);
+    const auto& edgePercentagesRaw =
+            properties.getPropertyRef<string_list>(PROPERTY_EDGEPERCENTAGES.name);
+    const auto edgePercentages = parseStringList<float>(edgePercentagesRaw);
 
-    const auto& synapsePercentsRaw =
-            properties.getPropertyRef<string_list>(PROPERTY_SYNAPSEPERCENTAGE.name);
-    const auto synapsePercents = parseFlatStringList<float>(synapsePercentsRaw);
+    const auto& edgeLoadModesRaw =
+            properties.getPropertyRef<string_list>(PROPERTY_EDGELOADMODES.name);
+    const auto edgeLoadModes = parseStringList<std::string>(edgeLoadModesRaw);
+
+    const auto& edgeSimsRaw =
+            properties.getPropertyRef<string_list>(PROPERTY_EDGESIMULATIONPATHS.name);
+    const auto edgeSims = parseStringList<std::string>(edgeSimsRaw);
 
     const auto& morphologySectionsRaw =
-            properties.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYPARTS.name);
+            properties.getPropertyRef<string_list>(PROPERTY_NEURONPARTS.name);
     const auto morphologySections = parseStringList<uint8_t>(morphologySectionsRaw);
 
     const auto& morphologyRadiusMultRaw =
-            properties.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYRADIUSMULT.name);
+            properties.getPropertyRef<string_list>(PROPERTY_RADIUSMULT.name);
     const auto morphologyRadiusMult = parseFlatStringList<float>(morphologyRadiusMultRaw);
 
     const auto& morphologyLoadMode =
-            properties.getPropertyRef<string_list>(PROPERTY_MORPHOLOGYLOADMODE.name);
+            properties.getPropertyRef<string_list>(PROPERTY_NEURONLOADMODE.name);
 
     const auto& vasculatureSectionsRaw =
             properties.getPropertyRef<string_list>(PROPERTY_VASCULATUREPARTS.name);
@@ -430,14 +486,15 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
         pls.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
         pls.simulationType = static_cast<SimulationType>(simTypes[i]);
         pls.simulationPath = simPaths[i];
-        pls.afferentPopulations = afferentPopulations[i];
-        pls.efferentPopulations = efferentPopulations[i];
-        pls.edgePercentage = glm::clamp(synapsePercents[i], 0.f, 1.f);
-        pls.morphologyRadius = morphologyRadiusMult[i];
-        pls.morphologyMode = morphologyLoadMode[i];
+        pls.edgePopulations = edgePopulations[i];
+        pls.edgePercentages = edgePercentages[i];
+        pls.edgeLoadModes = edgeLoadModes[i];
+        pls.edgeReports = edgeSims[i];
+        pls.radiusMultiplier = morphologyRadiusMult[i];
+        pls.neuronMode = morphologyLoadMode[i];
 
         for(const auto morphologyPart : morphologySections[i])
-            pls.morphologySections.insert(static_cast<MorphologySection>(morphologyPart));
+            pls.neuronSections.insert(static_cast<NeuronSection>(morphologyPart));
 
         for(const auto vasculaturePart : vasculatureSections[i])
             pls.vasculatureSections.insert(static_cast<VasculatureSection>(vasculaturePart));
@@ -453,12 +510,13 @@ brayns::PropertyMap SonataLoaderProperties::getPropertyList() noexcept
     props.setProperty(PROPERTY_NODEIDS);
     props.setProperty(PROPERTY_NODESIMULATIONTYPE);
     props.setProperty(PROPERTY_NODESIMULATIONTYPE);
-    props.setProperty(PROPERTY_AFFERENTPOPULATIONS);
-    props.setProperty(PROPERTY_EFFERENTPOPULATIONS);
-    props.setProperty(PROPERTY_SYNAPSEPERCENTAGE);
-    props.setProperty(PROPERTY_MORPHOLOGYLOADMODE);
-    props.setProperty(PROPERTY_MORPHOLOGYPARTS);
-    props.setProperty(PROPERTY_MORPHOLOGYRADIUSMULT);
+    props.setProperty(PROPERTY_EDGEPOPULATIONS);
+    props.setProperty(PROPERTY_EDGEPERCENTAGES);
+    props.setProperty(PROPERTY_EDGELOADMODES);
+    props.setProperty(PROPERTY_EDGESIMULATIONPATHS);
+    props.setProperty(PROPERTY_RADIUSMULT);
+    props.setProperty(PROPERTY_NEURONPARTS);
+    props.setProperty(PROPERTY_NEURONLOADMODE);
     props.setProperty(PROPERTY_VASCULATUREPARTS);
     return props;
 }

@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -26,10 +23,8 @@
 
 #include <bbp/sonata/config.h>
 
-#include "../morphology/MorphologyInstance.h"
-#include "../simulations/SonataSimulation.h"
-
-#include "../SonataLoaderProperties.h"
+#include <plugin/io/sonata/SonataLoaderProperties.h>
+#include <plugin/io/sonata/morphology/MorphologyInstance.h>
 
 class NodePopulationLoader
 {

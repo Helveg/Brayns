@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -21,7 +18,7 @@
 
 #pragma once
 
-#include "SonataLoaderTypes.h"
+#include <plugin/io/sonata/SonataLoaderEnums.h>
 
 #include <brayns/common/PropertyMap.h>
 
@@ -68,45 +65,55 @@ const brayns::Property PROPERTY_NODESIMULATIONFILEPATH = {
              "population (or an empty string to not load any)"}
         };
 
-const brayns::Property PROPERTY_AFFERENTPOPULATIONS = {
-            "AfferentEdgePopulations",
+const brayns::Property PROPERTY_EDGEPOPULATIONS = {
+            "EdgePopulations",
             std::vector<std::string>(),
-            {"Comma-separated list of edge populations from which to load afferent "
-             "edges for each population. The edge population must be valid for the "
-             "node population that is being requested for"}
+            {"Comma-separated list of edge populations from which to load EDGES "
+             "for each node population. The edge population must be valid for the "
+             "node population that is being requested for (Use an empty string to "
+             "avoid loading any edge population for a given node population)"}
         };
 
-const brayns::Property PROPERTY_EFFERENTPOPULATIONS = {
-            "EfferentEdgePopulations",
+const brayns::Property PROPERTY_EDGELOADMODES = {
+            "EdgeLoadModes",
             std::vector<std::string>(),
-            {"Comma-separated list of edge populations from which to load efferent "
-             "edges for each population. The edge population must be valid for the "
-              "node population that is being requested for"}
+            {"Comma-separated list of load modes for each edge population specified"
+             "in EdgePopulations, and one entry per each node population. Available"
+             "load modes are 'afferent' or 'efferent'"}
         };
 
-const brayns::Property PROPERTY_SYNAPSEPERCENTAGE = {
-            "EdgesPercentage",
+const brayns::Property PROPERTY_EDGEPERCENTAGES = {
+            "EdgePercentages",
             std::vector<std::string>(),
-            {"Percentage of synapses to load for each population"}
+            {"Comma-separated list of load percentages for each edge population specified,"
+             "and one entry per each node population. Values must be in the range 0.0 - 1.0"}
 };
 
-const brayns::Property PROPERTY_MORPHOLOGYPARTS = {
-            "MorphologySectionTypes",
+const brayns::Property PROPERTY_EDGESIMULATIONPATHS = {
+            "EdgeSimulationPaths",
             std::vector<std::string>(),
-            {"A comma separated list of numeric values that represent sections of the morphology "
-             "to load (0 = soma, 1 = axon, 2 = basal dendrite, 3 = apical dendrite)"}
+            {"Comma-separated list of paths to synapse reports to load along each specified "
+             "edge population, and one entry per each nod population (Use an empty string to "
+             "avoid load a report)"}
+};
+
+const brayns::Property PROPERTY_RADIUSMULT = {
+            "RadiusMultiplier",
+            std::vector<std::string>(),
+            {"A value used to multiply all geometry sample radii by"}
         };
 
-const brayns::Property PROPERTY_MORPHOLOGYRADIUSMULT = {
-            "MorphologyRadiusMultiplier",
+const brayns::Property PROPERTY_NEURONPARTS = {
+            "NeuronSectionTypes",
             std::vector<std::string>(),
-            {"A value used to multiply all morphology sample radii by"}
+            {"A comma separated list of numeric values that represent sections of the neuron and "
+             "astroctytes to load (0 = soma, 1 = axon, 2 = basal dendrite, 3 = apical dendrite)"}
         };
 
-const brayns::Property PROPERTY_MORPHOLOGYLOADMODE = {
-            "MorphologyLoadMode",
+const brayns::Property PROPERTY_NEURONLOADMODE = {
+            "NeuronLoadMode",
             std::vector<std::string>(),
-            {"Method to load and display the morphology. Possible values are: "
+            {"Method to load and display the neurons and astrocytes. Possible values are: "
              "'vanilla' (as read from disk), "
              "'smooth', (samples radii is adjusted for a smooth result) "
              "'samples' (each sample is represented with a sphere)"}
@@ -132,12 +139,13 @@ struct PopulationLoadConfig
     std::vector<std::string> nodeSets;
     SimulationType simulationType;
     std::string simulationPath;
-    std::vector<std::string> afferentPopulations;
-    std::vector<std::string> efferentPopulations;
-    float edgePercentage;
-    float morphologyRadius;
-    std::unordered_set<MorphologySection> morphologySections;
-    std::string morphologyMode;
+    std::vector<std::string> edgePopulations;
+    std::vector<std::string> edgeLoadModes;
+    std::vector<float> edgePercentages;
+    std::vector<std::string> edgeReports;
+    float radiusMultiplier;
+    std::unordered_set<NeuronSection> neuronSections;
+    std::string neuronMode;
     std::unordered_set<VasculatureSection> vasculatureSections;
 };
 

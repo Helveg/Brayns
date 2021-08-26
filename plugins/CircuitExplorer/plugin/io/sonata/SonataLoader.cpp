@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -21,13 +18,13 @@
 
 #include "SonataLoader.h"
 
-#include "SonataLoaderProperties.h"
-#include "data/SonataSelection.h"
-#include "populations/PopulationFactory.h"
-#include "simulations/SonataSimulationFactory.h"
-#include "simulations/TransferFunctionSetUp.h"
+#include <plugin/io/sonata/SonataLoaderProperties.h>
+#include <plugin/io/sonata/data/SonataSelection.h>
+#include <plugin/io/sonata/SonataFactory.h>
+#include <plugin/io/sonata/simulations/TransferFunctionSetUp.h>
+#include <plugin/io/sonata/simulations/reports/EdgeCompartmentLoader.h>
 
-#include "../../../common/log.h"
+#include <common/log.h>
 
 #include <brayns/common/utils/stringUtils.h>
 #include <brayns/engine/Scene.h>
@@ -46,41 +43,55 @@ inline auto selectNodes(const bbp::sonata::CircuitConfig& config,
     return selection.intersection(loadConfig.percentage);
 }
 
-inline std::unique_ptr<SonataSimulation> instantiateSimulation(const PopulationLoadConfig& config)
+inline NodeSimulationLoaderPtr
+instantiateNodeSimulation(const SonataFactories& factories, const PopulationLoadConfig& config)
 {
     if(config.simulationType == SimulationType::NONE)
         return {nullptr};
 
-    return SonataSimulationFactory::instance().createSimulation(config.simulationType,
-                                                                config.simulationPath,
-                                                                config.name);
+    return factories.simulations().instantiate(config.simulationType,
+                                               config.simulationPath,
+                                               config.name);
 }
 
 inline std::unique_ptr<NodePopulationLoader>
-instantiateNodes(const bbp::sonata::CircuitConfig& circuitConfig,
+instantiateNodes(const SonataFactories& factories,
+                 const bbp::sonata::CircuitConfig& circuitConfig,
                  const PopulationLoadConfig& loadConfig)
 {
-    return PopulationFactory::instance()
-                    .createNodeLoader(circuitConfig.getNodePopulation(loadConfig.name),
-                                      circuitConfig.getNodePopulationProperties(loadConfig.name));
+    auto properties = circuitConfig.getNodePopulationProperties(loadConfig.name);
+    return factories.nodeLoaders().instantiate(properties.type,
+                                               circuitConfig.getNodePopulation(loadConfig.name),
+                                               std::move(properties));
 }
 
 inline std::unique_ptr<EdgePopulationLoader>
-instantiateEdges(const bbp::sonata::CircuitConfig& circuitConfig,
-                 const PopulationLoadConfig& loadConfig,
-                 const std::string& edgePopulation)
+instantiateEdges(const SonataFactories& factories,
+                 const bbp::sonata::CircuitConfig& circuitConfig,
+                 const std::string& edgePopulation,
+                 const float percentage)
 {
-    bbp::sonata::EdgePopulation edges = circuitConfig.getEdgePopulation(edgePopulation);
-    if(edges.target() != loadConfig.name && edges.source() != loadConfig.name)
-        throw std::runtime_error("Requested edge population '" + edgePopulation
-                                 + "' does not have node population '" + loadConfig.name
-                                 + "' neither as source or target node population");
-
-    return PopulationFactory::instance()
-                    .createEdgeLoader(std::move(edges),
-                                      circuitConfig.getEdgePopulationProperties(edgePopulation));
+    const auto type = circuitConfig.getEdgePopulationProperties(edgePopulation).type;
+    return factories.edgeLoaders().instantiate(type,
+                                               circuitConfig,
+                                               edgePopulation,
+                                               percentage);
 }
 
+inline brayns::ModelDescriptorPtr createModelDescriptor(const std::string& name,
+                                                        const std::string& path,
+                                                        const brayns::ModelMetadata& metadata,
+                                                        brayns::ModelPtr& model)
+{
+    brayns::Transformation transform;
+    transform.setRotationCenter(model->getBounds().getCenter());
+    auto modelDescriptor =
+        std::make_shared<brayns::ModelDescriptor>(std::move(model), name,
+                                                  path,
+                                                  metadata);
+    modelDescriptor->setTransformation(transform);
+    return modelDescriptor;
+}
 } // namespace
 
 
@@ -125,6 +136,7 @@ SonataLoader::importFromFile(const std::string& path,
 {
     PLUGIN_INFO << "SONATA loader: Importing " << path << std::endl;
 
+    const SonataFactories factories;
     const bbp::sonata::CircuitConfig config = bbp::sonata::CircuitConfig::fromFile(path);
 
     // Check input loading paraemters <-> disk files sanity
@@ -132,49 +144,21 @@ SonataLoader::importFromFile(const std::string& path,
     const auto& requestedPopulations = loaderProps.getRequestedPopulations();
 
     // Load each population
-    std::vector<brayns::ModelDescriptorPtr> result (requestedPopulations.size());
+    std::vector<brayns::ModelDescriptorPtr> result;
 
     for(size_t i = 0; i < requestedPopulations.size(); ++i)
     {
-        // User load settings for this population
         const auto& loadConfig = requestedPopulations[i];
-
-        // Compute the node IDs that we will load
         const auto nodeSelection = selectNodes(config, loadConfig);
 
         if(nodeSelection.empty())
             throw std::runtime_error("Population " + loadConfig.name + " node selection is empty");
 
-        // Load nodes
-        const auto nodeLoader  = instantiateNodes(config, loadConfig);
+        // LOAD NODES
+        const auto nodeLoader  = instantiateNodes(factories, config, loadConfig);
         auto nodes = nodeLoader->load(loadConfig, nodeSelection, callback);
 
-        // Load edges (synapses) into the nodes
-        for(const auto& afferent : loadConfig.afferentPopulations)
-        {
-            const auto edgeLoader = instantiateEdges(config, loadConfig, afferent);
-            const auto synapses = edgeLoader->load(loadConfig, nodeSelection, true);
-            for(size_t i = 0; i < nodes.size(); ++i)
-            {
-                auto& node = nodes[i];
-                for(const auto& s : synapses[i])
-                    node->addSynapse(s.synapseId, s.sectionId, s.distance, s.position);
-            }
-        }
-        for(const auto& efferent : loadConfig.efferentPopulations)
-        {
-            const auto edgeLoader = instantiateEdges(config, loadConfig, efferent);
-            const auto synapses = edgeLoader->load(loadConfig, nodeSelection, false);
-            for(size_t i = 0; i < nodes.size(); ++i)
-            {
-                auto& node = nodes[i];
-                for(const auto& s : synapses[i])
-                    node->addSynapse(s.synapseId, s.sectionId, s.distance, s.position);
-            }
-        }
-
-        // Map simulation
-        const auto simulation = instantiateSimulation(loadConfig);
+        const auto simulation = instantiateNodeSimulation(factories, loadConfig);
         if(simulation)
         {
             const auto mapping = simulation->loadMapping(nodeSelection);
@@ -185,36 +169,68 @@ SonataLoader::importFromFile(const std::string& path,
             }
         }
 
-        // Add to brayns model
-        brayns::ModelPtr model = _scene.createModel();
+        brayns::ModelPtr nodeMmodel = _scene.createModel();
         for(const auto& node : nodes)
-            node->addToModel(*model);
-        model->updateBounds();
-
-        // Add simulation handler
+            node->addToModel(*nodeMmodel);
+        nodeMmodel->updateBounds();
         if(simulation)
         {
-            model->setSimulationHandler(simulation->createSimulationHandler(nodeSelection));
+            nodeMmodel->setSimulationHandler(simulation->createSimulationHandler(nodeSelection));
             SetSONATATransferFunction(_scene.getTransferFunction());
         }
 
-        // Create descriptor
-        brayns::ModelMetadata metadata = {
+        brayns::ModelMetadata nodeMetadata = {
+            {"Population", loadConfig.name},
+            {"Type", config.getNodePopulationProperties(loadConfig.name).type},
             {"Report", loadConfig.simulationPath},
             {"Node Sets", brayns::string_utils::join(loadConfig.nodeSets, ",")},
-            {"Number of neurons", std::to_string(nodeSelection.flatSize())},
+            {"Number of nodes", std::to_string(nodeSelection.flatSize())},
             {"Circuit Path", path}
         };
 
-        brayns::ModelDescriptorPtr& modelDescriptor = result[i];
-        brayns::Transformation transformation;
-        transformation.setRotationCenter(model->getBounds().getCenter());
-        modelDescriptor =
-            std::make_shared<brayns::ModelDescriptor>(std::move(model), "Circuit",
-                                                      path,
-                                                      metadata);
-        modelDescriptor->setTransformation(transformation);
-    }
+        result.push_back(createModelDescriptor(loadConfig.name, path, nodeMetadata, nodeMmodel));
 
+        // LOAD EDGES
+        for(size_t i = 0; i < loadConfig.edgePopulations.size(); ++i)
+        {
+            const auto& edgePop = loadConfig.edgePopulations[i];
+            const auto edgePerc = loadConfig.edgePercentages[i];
+            const auto& edgeMode = loadConfig.edgeLoadModes[i];
+
+            const auto edgeLoader = instantiateEdges(factories, config, edgePop, edgePerc);
+            const auto edges = edgeLoader->load(loadConfig, nodeSelection, edgeMode == "afferent");
+            if(edges.empty())
+                continue;
+
+            brayns::ModelPtr edgeModel = _scene.createModel();
+
+            for(size_t j = 0; j < nodes.size(); ++j)
+                edges[j]->mapToCell(*nodes[j]);
+
+            std::string edgeReport = "";
+            if(!loadConfig.edgeReports.empty() && !loadConfig.edgeReports[i].empty())
+            {
+                edgeReport = loadConfig.edgeReports[i];
+                const EdgeCompartmentLoader loader (loadConfig.edgeReports[i], edgePop);
+                const auto mapping = loader.loadMapping(nodeSelection);
+                for(size_t j = 0; j < edges.size(); ++j)
+                    edges[i]->mapSimulation(mapping[j].offsets);
+            }
+
+            for(size_t j = 0; j < nodes.size(); ++j)
+                edges[j]->addToModel(*edgeModel);
+
+            brayns::ModelMetadata edgeMetadata = {
+                {"Population", edgePop},
+                {"Type", config.getEdgePopulationProperties(edgePop).type},
+                {"Report", edgeReport},
+                {"Circuit Path", path}
+            };
+
+            result.push_back(createModelDescriptor(edgePop, path, edgeMetadata, edgeModel));
+
+            PLUGIN_INFO << "Loaded " << edgePop << " for " << loadConfig.name << std::endl;
+        }
+    }
     return result;
 }

@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -68,5 +65,21 @@ public:
     static
     std::vector<float> getEfferentSectionDistances(const Edges& population,
                                                    const Selection& selection);
+
+    static
+    std::vector<uint64_t> getAfferentAstrocyteSourceNodes(const Edges& population,
+                                                          const Selection& selection);
+
+    static
+    std::vector<uint64_t> getAfferentAstrocyteTargetNodes(const Edges& population,
+                                                          const Selection& selection);
+
+    static
+    std::vector<int32_t> getAfferentAstrocyteSectionIds(const Edges& population,
+                                                        const Selection& selection);
+
+    static
+    std::vector<float> getAfferentAstrocyteSectionDistances(const Edges& population,
+                                                            const Selection& selection);
 
 };

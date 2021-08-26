@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -40,6 +37,10 @@ constexpr char attribAffSegmentPos[]    = "afferent_section_pos";
 constexpr char attribAffSurfPosiX[]     = "afferent_surface_x";
 constexpr char attribAffSurfPosiY[]     = "afferent_surface_y";
 constexpr char attribAffSurfPosiZ[]     = "afferent_surface_z";
+
+constexpr char attribAstroSourceNodes[] = "source_node_id";
+constexpr char attribAstroSectionId[]   = "astrocyte_section_id";
+constexpr char attribAstroSectionPos[]  = "astrocyte_section_pos";
 
 void checkEdgeParameters(const bbp::sonata::EdgePopulation& population,
                          const std::vector<const char*>& inputAttribs)
@@ -162,4 +163,32 @@ std::vector<float> SonataSynapses::getEfferentSectionDistances(const Edges& popu
 {
     checkEdgeParameters(population, {attribEffSegmentPos});
     return population.getAttribute<float>(attribEffSegmentPos, selection);
+}
+
+std::vector<uint64_t> SonataSynapses::getAfferentAstrocyteSourceNodes(const Edges& population,
+                                                                      const Selection& selection)
+{
+    return population.sourceNodeIDs(selection);
+}
+
+std::vector<uint64_t> SonataSynapses::getAfferentAstrocyteTargetNodes(const Edges& population,
+                                                                      const Selection& selection)
+{
+    return population.targetNodeIDs(selection);
+}
+
+std::vector<int32_t> SonataSynapses::getAfferentAstrocyteSectionIds(const Edges& population,
+                                                                    const Selection& selection)
+{
+    checkEdgeParameters(population, {attribAstroSectionId});
+    auto sectionIds = population.getAttribute<int32_t>(attribAstroSectionId, selection);
+    fixSections(sectionIds);
+    return sectionIds;
+}
+
+std::vector<float> SonataSynapses::getAfferentAstrocyteSectionDistances(const Edges& population,
+                                                                        const Selection& selection)
+{
+    checkEdgeParameters(population, {attribAstroSectionPos});
+    return population.getAttribute<float>(attribAstroSectionPos, selection);
 }

@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -21,20 +18,22 @@
 
 #pragma once
 
-#include "../EdgePopulationLoader.h"
+#include <plugin/io/sonata/populations/EdgePopulationLoader.h>
 
 #include <bbp/sonata/config.h>
+
 
 class CommonEdgePopulationLoader: public EdgePopulationLoader
 {
 public:
-    CommonEdgePopulationLoader(bbp::sonata::EdgePopulation&& population,
-                               bbp::sonata::PopulationProperties&& populationProperties)
-     : EdgePopulationLoader(std::move(population), std::move(populationProperties))
+    CommonEdgePopulationLoader(const bbp::sonata::CircuitConfig& config,
+                               const std::string& population,
+                               const float percentage)
+     : EdgePopulationLoader(config, population, percentage)
     {
     }
 
-    std::vector<std::vector<SynapseInfo>>
+    std::vector<std::unique_ptr<SynapseGroup>>
     load(const PopulationLoadConfig& loadConfig,
          const bbp::sonata::Selection& nodeSelection,
          const bool afferent) const final;

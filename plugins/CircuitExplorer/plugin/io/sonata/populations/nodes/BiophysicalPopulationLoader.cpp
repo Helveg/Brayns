@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -21,50 +18,36 @@
 
 #include "BiophysicalPopulationLoader.h"
 
-#include "../PopulationFactory.h"
+#include <plugin/io/sonata/data/SonataCells.h>
 
-#include "../../data/SonataCells.h"
-
-#include "../../simulations/SonataSimulation.h"
-
-#include "../../morphology/MorphologyPipeline.h"
-#include "../../morphology/builders/SDFGeometryBuilder.h"
-#include "../../morphology/pipeline/RadiusMultiplier.h"
-#include "../../morphology/pipeline/RadiusSmoother.h"
-
-#include <iostream>
+#include <plugin/io/sonata/SonataFactory.h>
+#include <plugin/io/sonata/morphology/neuron/NeuronMorphology.h>
+#include <plugin/io/sonata/morphology/neuron/NeuronMorphologyPipeline.h>
+#include <plugin/io/sonata/morphology/neuron/pipeline/RadiusMultiplier.h>
+#include <plugin/io/sonata/morphology/neuron/pipeline/RadiusSmoother.h>
 
 namespace
 {
-class Registerer
-{
-public:
-    Registerer()
-    {
-        PopulationFactory::instance()
-                .registerNodeLoader<BiophysicalPopualtionLoader>("biophysical");
-    }
-};
-Registerer registerer;
-
 auto createMorphologyPipeline(const PopulationLoadConfig& loadSettings)
 {
-    MorphologyPipeline pipeline;
-    if(loadSettings.morphologyRadius != 1.f)
-        pipeline.registerStage<morphology::RadiusMultiplier>(loadSettings.morphologyRadius);
+    NeuronMorphologyPipeline pipeline;
+    if(loadSettings.radiusMultiplier != 1.f)
+        pipeline.registerStage<RadiusMultiplier>(loadSettings.radiusMultiplier);
 
-    if(loadSettings.morphologyMode == "smooth")
-        pipeline.registerStage<morphology::RadiusSmoother>();
+    if(loadSettings.neuronMode == "smooth")
+        pipeline.registerStage<RadiusSmoother>();
 
     return pipeline;
 }
-}
+} // namespace
 
 std::vector<MorphologyInstancePtr>
 BiophysicalPopualtionLoader::load(const PopulationLoadConfig& loadSettings,
                                   const bbp::sonata::Selection& nodeSelection,
                                   const brayns::LoaderProgress& updateCb) const
 {
+    const SonataFactories factories;
+
     const auto nodesSize = nodeSelection.flatSize();
     const auto morphologies = SonataCells::getMorphologies(_population, nodeSelection);
     const auto positions = SonataCells::getPositions(_population, nodeSelection);
@@ -83,10 +66,10 @@ BiophysicalPopualtionLoader::load(const PopulationLoadConfig& loadSettings,
     {
         // Load morphology
         const auto morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".swc";
-        const auto builder = morphologyPipeline
-                                .createMorphologyBuilder(loadSettings.morphologyMode,
-                                                         morphPath,
-                                                         loadSettings.morphologySections);
+        NeuronMorphology m (morphPath, loadSettings.neuronSections);
+        morphologyPipeline.process(m);
+        auto builder = factories.neuronBuilders().instantiate(loadSettings.neuronMode);
+        builder->build(m);
 
         // Instantiate the morphology for every cell with such morphology class
         for(const auto idx : entry.second)

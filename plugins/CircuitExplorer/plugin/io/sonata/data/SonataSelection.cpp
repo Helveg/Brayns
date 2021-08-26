@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -115,24 +112,4 @@ bbp::sonata::Selection NodeSelection::intersection(const double percent)
         return common;
     }
 
-}
-
-EdgeSelection::EdgeSelection()
- : _selection({})
-{
-}
-
-void EdgeSelection::select(const bbp::sonata::CircuitConfig& config,
-                           const std::string& edgePopulation,
-                           const bbp::sonata::Selection& nodeSelection,
-                           const bool afferent)
-{
-    const auto& edges = config.getEdgePopulation(edgePopulation);
-    _selection = afferent ? edges.afferentEdges(nodeSelection.flatten())
-                          : edges.efferentEdges(nodeSelection.flatten());
-}
-
-const bbp::sonata::Selection& EdgeSelection::selection() const noexcept
-{
-    return _selection;
 }

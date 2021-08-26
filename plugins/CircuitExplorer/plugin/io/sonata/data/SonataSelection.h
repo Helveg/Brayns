@@ -2,9 +2,6 @@
  * All rights reserved. Do not distribute without permission.
  * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
- *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
  * by the Free Software Foundation.
@@ -24,7 +21,7 @@
 #include <bbp/sonata/config.h>
 #include <bbp/sonata/population.h>
 
-#include "../SonataLoaderTypes.h"
+#include "../SonataLoaderEnums.h"
 
 
 /**
@@ -70,20 +67,4 @@ private:
     bbp::sonata::Selection _nodeSetsSelection;
     bbp::sonata::Selection _nodeListSelection;
     bbp::sonata::Selection _simulationSelection;
-};
-
-class EdgeSelection
-{
-public:
-    EdgeSelection();
-
-    void select(const bbp::sonata::CircuitConfig& config,
-                const std::string& edgePopulation,
-                const bbp::sonata::Selection& nodeSelection,
-                const bool afferent);
-
-    const bbp::sonata::Selection& selection() const noexcept;
-
-private:
-    bbp::sonata::Selection _selection;
 };
