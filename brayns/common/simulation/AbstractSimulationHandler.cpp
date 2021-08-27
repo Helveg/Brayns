@@ -39,8 +39,9 @@ AbstractSimulationHandler& AbstractSimulationHandler::operator=(
     return *this;
 }
 
-uint32_t AbstractSimulationHandler::_getBoundedFrame(const uint32_t frame) const
+uint32_t AbstractSimulationHandler::_getBoundedFrame(const uint32_t inputFrame) const
 {
+    const auto frame = static_cast<uint32_t>(inputFrame * _frameAdjuster);
     const double frameTimestamp = static_cast<double>(frame) * _dt;
     uint32_t boundedFrame = 0;
 

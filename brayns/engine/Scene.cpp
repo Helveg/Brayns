@@ -594,6 +594,7 @@ void Scene::_updateAnimationParameters()
 {
     std::vector<AbstractSimulationHandler*> handlers;
     uint32_t numFrames = 0;
+    double dt = std::numeric_limits<double>::max();
     {
         std::unique_lock<std::shared_timed_mutex> lock(_modelMutex);
         for(auto& modelDesc : _modelDescriptors)
@@ -604,9 +605,13 @@ void Scene::_updateAnimationParameters()
             auto simHandler = modelDesc->getModel().getSimulationHandler().get();
             if(simHandler)
             {
-                handlers.push_back(modelDesc->getModel().getSimulationHandler().get());
-                if(simHandler->getNbFrames() > numFrames)
-                    numFrames = simHandler->getNbFrames();
+                handlers.push_back(simHandler);
+                const auto handlerNumFrames = simHandler->getNbFrames();
+                if(handlerNumFrames > numFrames)
+                {
+                    dt = simHandler->getDt();
+                    numFrames = handlerNumFrames;
+                }
             }
         }
     }
@@ -617,6 +622,13 @@ void Scene::_updateAnimationParameters()
         ap.removeIsReadyCallback();
     else
     {
+        // Set the frame adjuster
+        for(auto& handler : handlers)
+        {
+            if(handler->getDt() != dt)
+                handler->setFrameAdjuster(dt / handler->getDt());
+        }
+
         ap.setIsReadyCallback(
             [handlersV = handlers]
             {
@@ -628,7 +640,7 @@ void Scene::_updateAnimationParameters()
                 return true;
             });
 
-        ap.setDt(handlers[0]->getDt(), false);
+        ap.setDt(dt, false);
         ap.setUnit(handlers[0]->getUnit(), false);
         ap.setNumFrames(numFrames, false);
         ap.markModified();

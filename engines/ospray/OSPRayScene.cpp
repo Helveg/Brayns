@@ -333,31 +333,32 @@ void OSPRayScene::_commitSimulationData(ModelDescriptors& modelDescriptors)
 {
     auto currentFrame = _animationParameters.getFrame();
 
-    //if(_lastFrame == currentFrame && !isModified())
-    //    return;
-
-    //_lastFrame = currentFrame;
-
-    _simData.clear();
-
-    uint64_t offset = 0;
-    for (auto& model : modelDescriptors)
+    if(_lastFrame != currentFrame || isModified())
     {
-        if(!model->getModel().isSimulationEnabled())
-            continue;
 
-        auto handler = model->getModel().getSimulationHandler();
-        if(!handler)
-            continue;
+        _lastFrame = currentFrame;
 
-        auto& modelImpl = static_cast<OSPRayModel&>(model->getModel());
-        modelImpl.setSimulationOffset(offset);
+        _simData.clear();
 
-        const float* data = static_cast<float*>(handler->getFrameData(currentFrame));
-        const uint64_t dataSize = handler->getFrameSize();
+        uint64_t offset = 0;
+        for (auto& model : modelDescriptors)
+        {
+            if(!model->getModel().isSimulationEnabled())
+                continue;
 
-        _simData.insert(_simData.end(), data, data + dataSize);
-        offset += dataSize;
+            auto handler = model->getModel().getSimulationHandler();
+            if(!handler)
+                continue;
+
+            auto& modelImpl = static_cast<OSPRayModel&>(model->getModel());
+            modelImpl.setSimulationOffset(offset);
+
+            const float* data = static_cast<float*>(handler->getFrameData(currentFrame));
+            const uint64_t dataSize = handler->getFrameSize();
+
+            _simData.insert(_simData.end(), data, data + dataSize);
+            offset += dataSize;
+        }
     }
 
     ospRelease(_ospSimulationData);

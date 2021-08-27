@@ -63,7 +63,6 @@ VoltageSimulationHandler::VoltageSimulationHandler(
     : brayns::AbstractSimulationHandler(rhs)
     , _synchronousMode(rhs._synchronousMode)
     , _compartmentReport(rhs._compartmentReport)
-    , _ready(false)
 {
 }
 

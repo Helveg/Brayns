@@ -53,6 +53,19 @@ public:
     void setCurrentFrame(const uint32_t newFrame) { _currentFrame = newFrame; }
 
     /**
+     * @brief setFrameAdjuster sets the frame adjusting parameter
+     *
+     * The frame adjuster Multiplies the current frame by this parameter to get the real
+     * report frame. Because Brayns now support multiple simulations simultaneously, its
+     * possible to have 2 simulations with same start and end time, but different time step
+     * (dt). This yields a different number of frames for each report, and without the
+     * adjuster, one of them would not be played at the appropiate rate
+     *
+     * @param adjuster
+     */
+    void setFrameAdjuster(const double adjuster) { _frameAdjuster = adjuster; }
+
+    /**
      * @brief returns a void pointer to the simulation data for the given frame
      * or nullptr if the frame is not loaded yet.
      */
@@ -116,6 +129,13 @@ protected:
     double _startTime {0};
     double _endTime{0};
     double _dt{0};
+    // Multiplies the current frame by this parameter to get the real report frame.
+    // Because Brayns now support multiple simulations simultaneously, its possible
+    // to have 2 simulations with same start and end time, but different time step (dt)
+    // This yields a different number of frames for each report, and without the adjuster,
+    // One of them would not be played at the appropiate rate
+    // frameToLoad = static_cast<uint32_t>(frame * _frameAdjuster)
+    double _frameAdjuster {1.0};
     std::string _unit;
 
     floats _frameData;

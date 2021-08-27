@@ -491,6 +491,7 @@ void Model::copyFrom(const Model& rhs)
     if (rhs._simulationHandler)
     {
         _simulationHandler = rhs._simulationHandler->clone();
+        _simulationEnabled = true;
         // Reset simulation handler current frame so the simulation data gets commited
         // (current frame != animation params current frame)
         _simulationHandler->setCurrentFrame(std::numeric_limits<uint32_t>::max());

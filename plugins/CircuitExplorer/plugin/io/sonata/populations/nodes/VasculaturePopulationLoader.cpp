@@ -45,10 +45,11 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
 
     for(size_t i = 0; i < sectionIds.size(); ++i)
     {
-        sections[i].id = sectionIds[i];
-        sections[i].parentId = sectionIds[startNodes[i]];
-        sections[i].type = sectionTypes[i];
-        sections[i].segments.push_back({startPoints[i], startRadii[i], endPoints[i], endRadii[i]});
+        auto secId = sectionIds[i];
+        sections[secId].id = secId;
+        sections[secId].parentId = sectionIds[startNodes[i]];
+        sections[secId].type = sectionTypes[i];
+        sections[secId].segments.push_back({startPoints[i], startRadii[i], endPoints[i], endRadii[i]});
     }
 
     auto morphologyInstance = VasculatureSDFBuilder().build(morphology);
