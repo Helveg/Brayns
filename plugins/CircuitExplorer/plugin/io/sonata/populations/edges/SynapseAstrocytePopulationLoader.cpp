@@ -40,8 +40,7 @@ SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig& loadConfig,
 
         const auto edgeSelection = _population.afferentEdges(baseNodeList);
         const auto edgeIds = edgeSelection.flatten();
-        const auto srcNodes = SonataSynapses::getAfferentAstrocyteSourceNodes(_population,
-                                                                              edgeSelection);
+        const auto srcNodes = SonataSynapses::getSourceNodes(_population, edgeSelection);
         const auto sectionIds = SonataSynapses::getAfferentAstrocyteSectionIds(_population,
                                                                                edgeSelection);
         const auto distances = SonataSynapses::getAfferentAstrocyteSectionDistances(_population,

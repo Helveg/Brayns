@@ -418,7 +418,8 @@ std::vector<T> parseFlatStringList(const string_list& list)
 
 } // namespace
 
-SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig& config,
+SonataLoaderProperties::SonataLoaderProperties(const std::string& path,
+                                               const bbp::sonata::CircuitConfig& config,
                                                const brayns::PropertyMap& properties)
 {
     checkParameters(config, properties, getPropertyList());
@@ -480,6 +481,7 @@ SonataLoaderProperties::SonataLoaderProperties(const bbp::sonata::CircuitConfig&
     for(size_t i = 0; i < populationList.size(); ++i)
     {
         auto& pls = _nodePopulations[i];
+        pls.configPath = path;
         pls.name = populationList[i];
         pls.nodeIds = nodeIds[i];
         pls.nodeSets = nodeSets[i];

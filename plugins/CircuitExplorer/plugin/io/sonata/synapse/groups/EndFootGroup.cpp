@@ -19,13 +19,9 @@
 #include "EndFootGroup.h"
 
 void EndFootGroup::addSynapse(const uint64_t id,
-                              const brayns::Vector3f& position,
                               brayns::TriangleMesh&& endFootMesh)
 {
     _meshes.emplace_back(std::move(endFootMesh));
-    auto& mesh = _meshes.back();
-    for(auto& vertex : mesh.vertices)
-        vertex += position;
 }
 
 void EndFootGroup::mapToCell(const MorphologyInstance&)

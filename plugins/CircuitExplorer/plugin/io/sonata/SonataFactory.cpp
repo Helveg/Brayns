@@ -31,6 +31,7 @@
 #include <plugin/io/sonata/populations/nodes/BiophysicalPopulationLoader.h>
 #include <plugin/io/sonata/populations/nodes/VasculaturePopulationLoader.h>
 
+#include <plugin/io/sonata/simulations/reports/EdgeCompartmentLoader.h>
 #include <plugin/io/sonata/simulations/reports/NodeCompartmentLoader.h>
 #include <plugin/io/sonata/simulations/reports/NodeSpikeLoader.h>
 
@@ -52,4 +53,6 @@ SonataFactories::SonataFactories()
 
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::REPORT);
     _simulations.registerProduct<NodeSpikeLoader>(SimulationType::SPIKES);
+    _simulations.registerProduct<EdgePopulationLoader>(SimulationType::SYNAPSE);
+    _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::SUMMATION);
 }

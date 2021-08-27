@@ -64,6 +64,7 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/sonata/SonataLoaderProperties.cpp
     plugin/io/sonata/SonataNGVLoader.cpp
     plugin/io/sonata/data/SonataCells.cpp
+    plugin/io/sonata/data/SonataEndFeetReader.cpp
     plugin/io/sonata/data/SonataSelection.cpp
     plugin/io/sonata/data/SonataSynapses.cpp
     plugin/io/sonata/data/SonataVasculature.cpp
@@ -124,6 +125,7 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonata/SonataLoaderProperties.h
     plugin/io/sonata/SonataNGVLoader.h
     plugin/io/sonata/data/SonataCells.h
+    plugin/io/sonata/data/SonataEndFeetReader.h
     plugin/io/sonata/data/SonataSelection.h
     plugin/io/sonata/data/SonataSynapses.h
     plugin/io/sonata/data/SonataVasculature.h
@@ -202,6 +204,8 @@ set(BRAYNSCIRCUITEXPLORER_LINK_LIBRARIES
     PRIVATE braynsCommon braynsParameters braynsIO braynsEngine braynsPluginAPI
     braynsOSPRayEngine glm sonata::sonata_shared MorphIO::morphio_shared Brion Brain
     ${FREEIMAGE_LIBRARIES} ${HDF5_LIBRARIES}
+    HighFive
+    nlohmann_json::nlohmann_json
 )
 
 set(BRAYNSCIRCUITEXPLORER_OMIT_LIBRARY_HEADER ON)

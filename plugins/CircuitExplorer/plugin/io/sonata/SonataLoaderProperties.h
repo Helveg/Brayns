@@ -133,6 +133,7 @@ const brayns::Property PROPERTY_VASCULATUREPARTS = {
  */
 struct PopulationLoadConfig
 {
+    std::string configPath;
     std::string name;
     float percentage;
     std::vector<uint64_t> nodeIds;
@@ -157,7 +158,8 @@ struct PopulationLoadConfig
 class SonataLoaderProperties
 {
 public:
-    SonataLoaderProperties(const bbp::sonata::CircuitConfig& config,
+    SonataLoaderProperties(const std::string& path,
+                           const bbp::sonata::CircuitConfig& config,
                            const brayns::PropertyMap& properties);
 
     static brayns::PropertyMap getPropertyList() noexcept;

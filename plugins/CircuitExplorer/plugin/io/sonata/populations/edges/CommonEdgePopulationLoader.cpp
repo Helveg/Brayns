@@ -46,7 +46,7 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
     {
         const auto edgeSelection = _population.afferentEdges(baseNodeList);
         edgeIds = edgeSelection.flatten();
-        srcNodes = SonataSynapses::getAfferentTargetNodes(_population, edgeSelection);
+        srcNodes = SonataSynapses::getTargetNodes(_population, edgeSelection);
         sectionIds = SonataSynapses::getAfferentSectionIds(_population, edgeSelection);
         surfacePos = SonataSynapses::getAfferentSurfacePos(_population, edgeSelection);
         distances = SonataSynapses::getAfferentSectionDistances(_population, edgeSelection);
@@ -55,7 +55,7 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
     {
         const auto edgeSelection = _population.efferentEdges(baseNodeList);
         edgeIds = edgeSelection.flatten();
-        srcNodes = SonataSynapses::getEfferentSourceNodes(_population, edgeSelection);
+        srcNodes = SonataSynapses::getSourceNodes(_population, edgeSelection);
         surfacePos = SonataSynapses::getEfferentSurfacePos(_population, edgeSelection);
         sectionIds = SonataSynapses::getEfferentSectionIds(_population, edgeSelection);
         distances = SonataSynapses::getEfferentSectionDistances(_population, edgeSelection);

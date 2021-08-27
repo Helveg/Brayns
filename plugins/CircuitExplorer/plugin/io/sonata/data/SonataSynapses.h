@@ -30,18 +30,11 @@ private:
     using Selection = bbp::sonata::Selection;
 public:
     static
-    std::vector<uint64_t> getAfferentSourceNodes(const Edges& population,
+    std::vector<uint64_t> getSourceNodes(const Edges& population,
                                                  const Selection& edgeSelection);
     static
-    std::vector<uint64_t> getAfferentTargetNodes(const Edges& population,
+    std::vector<uint64_t> getTargetNodes(const Edges& population,
                                                  const Selection& edgeSelection);
-    static
-    std::vector<uint64_t> getEfferentSourceNodes(const Edges& population,
-                                                 const Selection& edgeSelection);
-    static
-    std::vector<uint64_t> getEfferentTargetNodes(const Edges& population,
-                                                 const Selection& edgeSelection);
-
     static
     std::vector<int32_t> getAfferentSectionIds(const Edges& population,
                                                const Selection& edgeSelection);
@@ -67,19 +60,17 @@ public:
                                                    const Selection& selection);
 
     static
-    std::vector<uint64_t> getAfferentAstrocyteSourceNodes(const Edges& population,
-                                                          const Selection& selection);
-
-    static
-    std::vector<uint64_t> getAfferentAstrocyteTargetNodes(const Edges& population,
-                                                          const Selection& selection);
-
-    static
     std::vector<int32_t> getAfferentAstrocyteSectionIds(const Edges& population,
                                                         const Selection& selection);
 
     static
     std::vector<float> getAfferentAstrocyteSectionDistances(const Edges& population,
                                                             const Selection& selection);
+
+    static std::vector<brayns::Vector3f>
+    getEndFeetSurfacePos(const Edges& population, const Selection& selection);
+
+    static std::vector<uint64_t>
+    getEndFeetIds(const Edges& population, const Selection& selection);
 
 };

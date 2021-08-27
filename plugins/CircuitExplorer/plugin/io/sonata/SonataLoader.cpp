@@ -140,7 +140,7 @@ SonataLoader::importFromFile(const std::string& path,
     const bbp::sonata::CircuitConfig config = bbp::sonata::CircuitConfig::fromFile(path);
 
     // Check input loading paraemters <-> disk files sanity
-    const SonataLoaderProperties loaderProps (config, props);
+    const SonataLoaderProperties loaderProps (path, config, props);
     const auto& requestedPopulations = loaderProps.getRequestedPopulations();
 
     // Load each population
@@ -150,6 +150,7 @@ SonataLoader::importFromFile(const std::string& path,
     {
         const auto& loadConfig = requestedPopulations[i];
         const auto nodeSelection = selectNodes(config, loadConfig);
+        const auto nodeSize = nodeSelection.flatSize();
 
         if(nodeSelection.empty())
             throw std::runtime_error("Population " + loadConfig.name + " node selection is empty");
@@ -189,11 +190,13 @@ SonataLoader::importFromFile(const std::string& path,
         };
 
         result.push_back(createModelDescriptor(loadConfig.name, path, nodeMetadata, nodeMmodel));
+        PLUGIN_INFO << "Loaded node population " << loadConfig.name << std::endl;
 
         // LOAD EDGES
         for(size_t i = 0; i < loadConfig.edgePopulations.size(); ++i)
         {
             const auto& edgePop = loadConfig.edgePopulations[i];
+
             const auto edgePerc = loadConfig.edgePercentages[i];
             const auto& edgeMode = loadConfig.edgeLoadModes[i];
 
@@ -229,7 +232,7 @@ SonataLoader::importFromFile(const std::string& path,
 
             result.push_back(createModelDescriptor(edgePop, path, edgeMetadata, edgeModel));
 
-            PLUGIN_INFO << "Loaded " << edgePop << " for " << loadConfig.name << std::endl;
+            PLUGIN_INFO << "Loaded " <<edgePop<< " for " <<loadConfig.name<< " nodes" << std::endl;
         }
     }
     return result;
