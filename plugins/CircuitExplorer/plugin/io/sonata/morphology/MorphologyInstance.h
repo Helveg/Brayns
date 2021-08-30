@@ -21,7 +21,7 @@
 #include <brayns/common/mathTypes.h>
 #include <brayns/common/types.h>
 
-#include <plugin/api/CellMapper.h>
+#include <plugin/api/CircuitColorHandler.h>
 
 
 class MorphologySynapses

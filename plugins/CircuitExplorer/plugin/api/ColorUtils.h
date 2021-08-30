@@ -1,8 +1,6 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/BlueBrain/Brayns>
+ * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -20,14 +18,36 @@
 
 #pragma once
 
-#include <brayns/common/types.h>
+#include <brayns/common/mathTypes.h>
 
-struct CellGeometryMap
+struct ColorTable
 {
-    size_t somaMaterial {brayns::NO_MATERIAL};
-    size_t axonMaterial {brayns::NO_MATERIAL};
-    size_t dendriteMatrial {brayns::NO_MATERIAL};
-    size_t apicalDendriteMaterial {brayns::NO_MATERIAL};
-    std::vector<size_t> afferentSynMaterials;
-    std::vector<size_t> efferentSynMaterials;
+    std::vector<brayns::Vector3f> VALUES;
+
+    ColorTable();
+};
+
+class ColorDeck
+{
+public:
+    const brayns::Vector3f& getColorForKey(const std::string& k) noexcept;
+
+private:
+    const brayns::Vector3f& emplaceColor(const std::string& k) noexcept;
+
+    static ColorTable _TABLE;
+
+    std::unordered_map<std::string, size_t> _colorMap;
+    size_t _lastIndex {0};
+};
+
+class ColorRoulette
+{
+public:
+    const brayns::Vector3f& getNextColor() noexcept;
+
+private:
+    static ColorTable _TABLE;
+
+    size_t _lastIndex {0};
 };
