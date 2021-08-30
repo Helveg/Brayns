@@ -461,7 +461,7 @@ MorphologyTreeStructure MorphologyLoader::_calculateMorphologyTreeStructure(
 
     const auto overlaps = [](const std::pair<double, brayns::Vector3f>& p0,
                              const std::pair<double, brayns::Vector3f>& p1) {
-        const double d = (p0.second - p1.second).length();
+        const double d = glm::length(p0.second - p1.second);
         const double r = p0.first + p1.first;
 
         return (d < r);
@@ -649,7 +649,7 @@ float MorphologyLoader::_distanceToSoma(const brain::neuron::Section& section,
         {
             const auto& a = samples[i];
             const auto& b = samples[i + 1];
-            distance = distance + (b - a).length();
+            distance = distance + glm::length(b - a);
         }
     }
 
@@ -663,7 +663,7 @@ float MorphologyLoader::_distanceToSoma(const brain::neuron::Section& section,
         {
             const auto& a = samples[i];
             const auto& b = samples[i + 1];
-            distance = distance + (b - a).length();
+            distance = distance + glm::length(b - a);
         }
     }
 

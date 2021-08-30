@@ -53,6 +53,5 @@ SonataFactories::SonataFactories()
 
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::REPORT);
     _simulations.registerProduct<NodeSpikeLoader>(SimulationType::SPIKES);
-    _simulations.registerProduct<EdgePopulationLoader>(SimulationType::SYNAPSE);
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::SUMMATION);
 }
