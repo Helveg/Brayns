@@ -21,10 +21,18 @@
 #include <brayns/common/types.h>
 #include <brayns/engine/Model.h>
 
+#include <unordered_map>
 #include <unordered_set>
 
 using ColorVariables = std::unordered_map<std::string, brayns::Vector3f>;
 
+/**
+ * @brief The CircuitColorHandler class is in charge of providing an API to color neuronal
+ *        circuits based on which parameters are available on the files from which they
+ *        were loaded. Is a temporary solution that does the job without hardcoding
+ *        it on the model/scene, until a comprehensive engine API for defining custom models
+ *        is made available by the engine core
+ */
 class CircuitColorHandler
 {
 public:

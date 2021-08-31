@@ -80,11 +80,29 @@ EndFootPopulationLoader::load(const PopulationLoadConfig& loadConfig,
 
     auto meshes = SonataEndFeetReader::readEndFeet(path, endFeetIds, endFeetPos);
 
-    std::vector<std::unique_ptr<SynapseGroup>> result;
+    // XXX
+
+    std::map<uint64_t, std::unique_ptr<SynapseGroup>> mapping;
+    for(const auto nodeId : nodes)
+        mapping[nodeId] = std::make_unique<EndFootGroup>();
+
+    for(size_t i = 0; i < endFeetIds.size(); ++i)
+    {
+        EndFootGroup& group = static_cast<EndFootGroup&>(*mapping[sourceNodes[i]].get());
+        group.addSynapse(endFeetIds[i], std::move(meshes[i]));
+    }
+
+    std::vector<std::unique_ptr<SynapseGroup>> result (nodes.size());
+
+    for(size_t i = 0; i < nodes.size(); ++i)
+        result[i] = std::move(mapping[nodes[i]]);
+
+    /*
     result.push_back(std::make_unique<EndFootGroup>());
     EndFootGroup& group = static_cast<EndFootGroup&>(*result.back().get());
     for(size_t i = 0; i < endFeetIds.size(); ++i)
         group.addSynapse(endFeetIds[i], std::move(meshes[i]));
+    */
 
     return result;
 }

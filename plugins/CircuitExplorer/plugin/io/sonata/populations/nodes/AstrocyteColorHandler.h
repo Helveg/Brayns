@@ -18,38 +18,6 @@
 
 #pragma once
 
-#include <brayns/common/mathTypes.h>
+#include <plugin/io/sonata/populations/nodes/BiophysicalColorHandler.h>
 
-#include <unordered_map>
-
-struct ColorTable
-{
-    std::vector<brayns::Vector3f> VALUES;
-
-    ColorTable();
-};
-
-class ColorDeck
-{
-public:
-    const brayns::Vector3f& getColorForKey(const std::string& k) noexcept;
-
-private:
-    const brayns::Vector3f& emplaceColor(const std::string& k) noexcept;
-
-    static ColorTable _TABLE;
-
-    std::unordered_map<std::string, size_t> _colorMap;
-    size_t _lastIndex {0};
-};
-
-class ColorRoulette
-{
-public:
-    const brayns::Vector3f& getNextColor() noexcept;
-
-private:
-    static ColorTable _TABLE;
-
-    size_t _lastIndex {0};
-};
+using AstrocyteColorHandler = BiophysicalColorHandler;

@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <plugin/io/sonata/populations/SonataCircuitColorHandler.h>
+#include <plugin/io/sonata/populations/NodeColorHandler.h>
 
 struct BiophysicalMaterialMap : public ElementMaterialMap
 {
@@ -32,7 +32,7 @@ struct BiophysicalMaterialMap : public ElementMaterialMap
  * @brief The BiophysicalColorHandler class provides functionality
  *        to set a biophysical node population circuit color
  */
-class BiophysicalColorHandler : public SonataCircuitColorHandler
+class BiophysicalColorHandler : public NodeColorHandler
 {
 public:
     BiophysicalColorHandler(brayns::ModelDescriptor* model,

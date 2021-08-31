@@ -35,6 +35,21 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
     const auto sectionTypes = SonataVasculature::getSegmentSectionTypes(_population, selection);
     const auto startNodes = SonataVasculature::getSegmentStartNodes(_population, selection);
 
+    std::vector<MorphologyInstancePtr> result (startPoints.size());
+    for(size_t i = 0; i < startPoints.size(); ++i)
+    {
+        VasculatureMorphology morphology;
+        morphology.sections().emplace_back();
+        auto& section = morphology.sections().back();
+        section.id = sectionIds[i];
+        section.parentId = sectionIds[startNodes[i]];
+        section.type = sectionTypes[i];
+        section.segments.push_back({startPoints[i], startRadii[i], endPoints[i], endRadii[i]});
+
+        result[i] = VasculatureSDFBuilder().build(morphology);
+    }
+
+    /*
     uint32_t highestSection = 0;
     for(const auto sectionId : sectionIds)
         highestSection = sectionId > highestSection? sectionId : highestSection;
@@ -56,5 +71,7 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
 
     std::vector<MorphologyInstancePtr> result;
     result.push_back(std::move(morphologyInstance));
+    */
+
     return result;
 }

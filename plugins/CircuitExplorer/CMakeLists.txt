@@ -42,6 +42,8 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     module/ispc/render/utils/CircuitExplorerAbstractRenderer.cpp
     module/ispc/render/utils/CircuitExplorerSimulationRenderer.cpp
     plugin/api/CellObjectMapper.cpp
+    plugin/api/CircuitColorManager.cpp
+    plugin/api/ColorUtils.cpp
     plugin/meshing/MetaballsGenerator.cpp
     plugin/meshing/PointCloudMesher.cpp
     plugin/CircuitExplorerPlugin.cpp
@@ -84,6 +86,7 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/sonata/populations/edges/EndFootPopulationLoader.cpp
     plugin/io/sonata/populations/edges/SynapseAstrocytePopulationLoader.cpp
     plugin/io/sonata/populations/nodes/AstrocytePopulationLoader.cpp
+    plugin/io/sonata/populations/nodes/BiophysicalColorHandler.cpp
     plugin/io/sonata/populations/nodes/BiophysicalPopulationLoader.cpp
     plugin/io/sonata/populations/nodes/VasculaturePopulationLoader.cpp
     plugin/io/sonata/simulations/TransferFunctionSetUp.cpp
@@ -100,6 +103,9 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
 
 set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/api/CellObjectMapper.h
+    plugin/api/CircuitColorHandler.h
+    plugin/api/CircuitColorManager.h
+    plugin/api/ColorUtils.h
     plugin/api/CircuitExplorerParams.h
     plugin/api/MorphologyMap.h
     plugin/meshing/MetaballsGenerator.h
@@ -146,6 +152,7 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonata/morphology/vasculature/VasculatureSDFBuilder.h
     plugin/io/sonata/morphology/vasculature/VasculatureSDFInstance.h
     plugin/io/sonata/populations/EdgePopulationLoader.h
+    plugin/io/sonata/populations/NodeColorHandler.h
     plugin/io/sonata/populations/NodePopulationLoader.h
     plugin/io/sonata/populations/edges/ChemicalSynapsePopulationLoader.h
     plugin/io/sonata/populations/edges/CommonEdgePopulationLoader.h
@@ -153,7 +160,9 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonata/populations/edges/EndFootPopulationLoader.h
     plugin/io/sonata/populations/edges/GlialGlialPopulationLoader.h
     plugin/io/sonata/populations/edges/SynapseAstrocytePopulationLoader.h
+    plugin/io/sonata/populations/nodes/AstrocyteColorHandler.h
     plugin/io/sonata/populations/nodes/AstrocytePopulationLoader.h
+    plugin/io/sonata/populations/nodes/BiophysicalColorHandler.h
     plugin/io/sonata/populations/nodes/BiophysicalPopulationLoader.h
     plugin/io/sonata/populations/nodes/VasculaturePopulationLoader.h
     plugin/io/sonata/simulations/SimulationLoader.h

@@ -24,6 +24,8 @@
 
 #include <plugin/api/ColorUtils.h>
 
+#include <numeric>
+
 namespace
 {
 std::unordered_set<std::string> fillMethods(const std::string& configP, const std::string& pop)
@@ -87,12 +89,193 @@ inline void updateMaterial(brayns::ModelDescriptor* model,
     model->getModel().getMaterial(materialId)->setDiffuseColor(newColor);
 }
 
+std::vector<uint64_t> parseNodeRanges(const std::string& input)
+{
+    if(input.empty())
+        throw std::invalid_argument("ColorHandler: Received empty node ID / node range ID");
+
+    std::vector<uint64_t> result;
+    const auto dashPos = input.find("-");
+    if(dashPos == std::string::npos)
+    {
+        try
+        {
+            result.push_back(std::stoull(input));
+        }
+        catch (...)
+        {
+            throw std::runtime_error("ColorHandler: Could not parse node ID '" + input + "'");
+        }
+    }
+    else
+    {
+        const auto rangeBeginStr = input.substr(0, dashPos);
+        const auto rangeEndStr = input.substr(dashPos + 1);
+        try
+        {
+            const auto rangeStart = std::stoull(rangeBeginStr);
+            const auto rangeEnd = std::stoull(rangeEndStr);
+            result.resize(rangeEnd - rangeStart);
+            std::iota(result.begin(), result.end(), rangeStart);
+        }
+        catch (...)
+        {
+            throw std::runtime_error("ColorHandler: Could not parse node range ID '"
+                                     + input + "'");
+        }
+    }
 }
+
+void colorWithInput(brayns::ModelDescriptor* model,
+                    std::unordered_map<uint64_t, ElementMaterialMap*>& mapping,
+                    const std::string& method,
+                    const ColorVariables& input,
+                    const std::string& configPath,
+                    const std::string& population)
+{
+    if(method == "node_id")
+    {
+        for(const auto& entry : input)
+        {
+            std::vector<uint64_t> nodeIds = parseNodeRanges(entry.first);
+            for(const auto nodeId : nodeIds)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*mapping[nodeId]);
+                updateMaterial(model, element.soma, entry.second);
+                updateMaterial(model, element.axon, entry.second);
+                updateMaterial(model, element.dendrite, entry.second);
+                updateMaterial(model, element.apicalDendrite, entry.second);
+            }
+        }
+    }
+    else if(method == "morphology_part")
+    {
+        const auto somaColorIt = input.find("soma");
+        if(somaColorIt != input.end())
+        {
+            for(auto& elementMap : mapping)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
+                updateMaterial(model, element.soma, somaColorIt->second);
+            }
+        }
+        const auto axonColorIt = input.find("axon");
+        if(axonColorIt != input.end())
+        {
+            for(auto& elementMap : mapping)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
+                updateMaterial(model, element.axon, axonColorIt->second);
+            }
+        }
+        const auto dendColorIt = input.find("dendrite");
+        if(dendColorIt != input.end())
+        {
+            for(auto& elementMap : mapping)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
+                updateMaterial(model, element.dendrite, dendColorIt->second);
+            }
+        }
+        const auto aDendColorIt = input.find("apical_dendrite");
+        if(aDendColorIt != input.end())
+        {
+            for(auto& elementMap : mapping)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
+                updateMaterial(model, element.apicalDendrite, aDendColorIt->second);
+            }
+        }
+    }
+    else
+    {
+        const auto nodeIds = getNodeIds(mapping);
+        const auto selection = bbp::sonata::Selection::fromValues(nodeIds);
+        const auto values = getVariables(configPath, population, method, selection);
+
+        std::unordered_map<std::string, std::vector<uint64_t>> map;
+        for(size_t i = 0; i < values.size(); ++i)
+        {
+            map[values[i]].push_back(nodeIds[i]);
+        }
+        for(const auto& entry : map)
+        {
+            const auto& color = input.at(entry.first);
+            for(const auto nodeId : entry.second)
+            {
+                auto& element = static_cast<BiophysicalMaterialMap&>(*mapping[nodeId]);
+                updateMaterial(model, element.soma, color);
+                updateMaterial(model, element.axon, color);
+                updateMaterial(model, element.dendrite, color);
+                updateMaterial(model, element.apicalDendrite, color);
+            }
+        }
+    }
+}
+
+void colorRandomly(brayns::ModelDescriptor* model,
+                   std::vector<ElementMaterialMap::Ptr>& maps,
+                   const std::unordered_map<uint64_t, ElementMaterialMap*>& materialMap,
+                   const std::string& method,
+                   const std::string& configPath,
+                   const std::string& population)
+{
+    if(method == "node_id")
+    {
+        ColorRoulette colors;
+        for(auto& elementPtr : maps)
+        {
+            const auto& nextColor = colors.getNextColor();
+            auto& element = static_cast<BiophysicalMaterialMap&>(*elementPtr.get());
+            updateMaterial(model, element.soma, nextColor);
+            updateMaterial(model, element.axon, nextColor);
+            updateMaterial(model, element.dendrite, nextColor);
+            updateMaterial(model, element.apicalDendrite, nextColor);
+        }
+    }
+    else if(method == "morphology_part")
+    {
+        ColorRoulette colors;
+        const auto& somaColor = colors.getNextColor();
+        const auto& axonColor = colors.getNextColor();
+        const auto& dendColor = colors.getNextColor();
+        const auto& apicalDendColor = colors.getNextColor();
+        for(auto& elementPtr : maps)
+        {
+            auto& element = static_cast<BiophysicalMaterialMap&>(*elementPtr.get());
+            updateMaterial(model, element.soma, somaColor);
+            updateMaterial(model, element.axon, axonColor);
+            updateMaterial(model, element.dendrite, dendColor);
+            updateMaterial(model, element.apicalDendrite, apicalDendColor);
+        }
+    }
+    else
+    {
+        const auto nodeIds = getNodeIds(materialMap);
+        const auto selection = bbp::sonata::Selection::fromValues(nodeIds);
+        const auto values = getVariables(configPath, population, method, selection);
+
+        ColorDeck deck;
+
+        for(size_t i = 0; i < maps.size(); ++i)
+        {
+            auto& element = static_cast<BiophysicalMaterialMap&>(*maps[i].get());
+            const auto& key = values[i];
+            const auto& color = deck.getColorForKey(key);
+            updateMaterial(model, element.soma, color);
+            updateMaterial(model, element.axon, color);
+            updateMaterial(model, element.dendrite, color);
+            updateMaterial(model, element.apicalDendrite, color);
+        }
+    }
+}
+
+} // namespace
 
 BiophysicalColorHandler::BiophysicalColorHandler(brayns::ModelDescriptor* model,
                                                  const std::string& configPath,
                                                  const std::string& population)
- : SonataCircuitColorHandler(model, configPath, population)
+ : NodeColorHandler(model, configPath, population)
  , _methodCache(fillMethods(_configPath, _population))
 {
 }
@@ -124,85 +307,7 @@ void
 BiophysicalColorHandler::updateColor(const std::string& method, const ColorVariables& variables)
 {
     if(!variables.empty())
-    {
-        if(method == "node_id")
-        {
-            for(const auto& entry : variables)
-            {
-                const auto nodeId = std::stoull(entry.first);
-                auto& element = static_cast<BiophysicalMaterialMap&>(*_materialMap[nodeId]);
-                updateMaterial(_model, element.soma, entry.second);
-                updateMaterial(_model, element.axon, entry.second);
-                updateMaterial(_model, element.dendrite, entry.second);
-                updateMaterial(_model, element.apicalDendrite, entry.second);
-            }
-        }
-        else if(method == "morphology_part")
-        {
-            const auto somaColorIt = variables.find("soma");
-            if(somaColorIt != variables.end())
-            {
-                for(auto& elementMap : _materialMap)
-                {
-                    auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
-                    updateMaterial(_model, element.soma, somaColorIt->second);
-                }
-            }
-            const auto axonColorIt = variables.find("axon");
-            if(axonColorIt != variables.end())
-            {
-                for(auto& elementMap : _materialMap)
-                {
-                    auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
-                    updateMaterial(_model, element.axon, axonColorIt->second);
-                }
-            }
-            const auto dendColorIt = variables.find("dendrite");
-            if(dendColorIt != variables.end())
-            {
-                for(auto& elementMap : _materialMap)
-                {
-                    auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
-                    updateMaterial(_model, element.dendrite, dendColorIt->second);
-                }
-            }
-            const auto aDendColorIt = variables.find("apical_dendrite");
-            if(aDendColorIt != variables.end())
-            {
-                for(auto& elementMap : _materialMap)
-                {
-                    auto& element = static_cast<BiophysicalMaterialMap&>(*elementMap.second);
-                    updateMaterial(_model, element.apicalDendrite, aDendColorIt->second);
-                }
-            }
-        }
-        else
-        {
-            const auto nodeIds = getNodeIds(_materialMap);
-            const auto selection = bbp::sonata::Selection::fromValues(nodeIds);
-            const auto values = getVariables(_configPath, _population, method, selection);
-
-            std::unordered_map<std::string, std::vector<uint64_t>> map;
-            for(size_t i = 0; i < values.size(); ++i)
-            {
-                map[values[i]].push_back(nodeIds[i]);
-            }
-            for(const auto& entry : map)
-            {
-                const auto& color = variables.at(entry.first);
-                for(const auto nodeId : entry.second)
-                {
-                    auto& element = static_cast<BiophysicalMaterialMap&>(*_materialMap[nodeId]);
-                    updateMaterial(_model, element.soma, color);
-                    updateMaterial(_model, element.axon, color);
-                    updateMaterial(_model, element.dendrite, color);
-                    updateMaterial(_model, element.apicalDendrite, color);
-                }
-            }
-        }
-    }
+        colorWithInput(_model, _materialMap, method, variables, _configPath, _population);
     else
-    {
-
-    }
+        colorRandomly(_model, _maps, _materialMap, method, _configPath, _population);
 }

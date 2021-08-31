@@ -27,12 +27,12 @@ struct ElementMaterialMap
     using Ptr = std::unique_ptr<ElementMaterialMap>;
 };
 
-class SonataCircuitColorHandler : public CircuitColorHandler
+class NodeColorHandler : public CircuitColorHandler
 {
 public:
-    SonataCircuitColorHandler(brayns::ModelDescriptor* model,
-                              const std::string& configPath,
-                              const std::string& population)
+    NodeColorHandler(brayns::ModelDescriptor* model,
+                     const std::string& configPath,
+                     const std::string& population)
      : CircuitColorHandler(model)
      , _configPath(configPath)
      , _population(population)
