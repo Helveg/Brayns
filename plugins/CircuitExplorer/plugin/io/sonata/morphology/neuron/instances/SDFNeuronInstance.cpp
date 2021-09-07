@@ -21,6 +21,8 @@
 #include <brayns/engine/Material.h>
 #include <brayns/engine/Model.h>
 
+#include <plugin/io/sonata/populations/nodes/colorhandlers/NeuronColorHandler.h>
+
 namespace
 {
 inline auto createMaterial(brayns::Model& model)
@@ -70,7 +72,7 @@ void SDFNeuronInstance::mapSimulation(const size_t globalOffset,
     }
 }
 
-void SDFNeuronInstance::addToModel(brayns::Model& model) const
+ElementMaterialMap::Ptr  SDFNeuronInstance::addToModel(brayns::Model& model) const
 {
     std::vector<size_t> localToGlobalIndex(_sdfGeometries.size(), 0);
 
@@ -107,6 +109,19 @@ void SDFNeuronInstance::addToModel(brayns::Model& model) const
 
         model.updateSDFGeometryNeighbours(globalIndex, neighboursTmp);
     }
+
+    const auto updateMaterialMap = [&](const NeuronSection section, size_t& buffer)
+    {
+        auto it = sectionToMat.find(section);
+        if(it != sectionToMat.end())
+            buffer = it->second;
+    };
+    auto materialMap = std::make_unique<NeuronMaterialMap>();
+    updateMaterialMap(NeuronSection::SOMA, materialMap->soma);
+    updateMaterialMap(NeuronSection::AXON, materialMap->axon);
+    updateMaterialMap(NeuronSection::DENDRITE, materialMap->dendrite);
+    updateMaterialMap(NeuronSection::APICAL_DENDRITE, materialMap->apicalDendrite);
+    return materialMap;
 }
 
 size_t

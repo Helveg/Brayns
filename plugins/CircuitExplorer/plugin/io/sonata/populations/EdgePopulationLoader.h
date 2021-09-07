@@ -31,11 +31,12 @@ class EdgePopulationLoader
 public:
     EdgePopulationLoader(const bbp::sonata::CircuitConfig& config,
                          const std::string& population,
-                         const float percentage)
+                         const float percentage,
+                         const bool afferent)
      : _config(config)
-     , _populationName(population)
-     , _population(_config.getEdgePopulation(_populationName))
+     , _population(_config.getEdgePopulation(population))
      , _percentage(percentage)
+     , _afferent(afferent)
     {
     }
 
@@ -43,14 +44,34 @@ public:
 
     std::vector<std::unique_ptr<SynapseGroup>>
     virtual load(const PopulationLoadConfig& loadConfig,
-                 const bbp::sonata::Selection& nodeSelection,
-                 const bool afferent) const = 0;
+                 const bbp::sonata::Selection& nodeSelection) const = 0;
+
+    virtual std::unique_ptr<CircuitColorHandler>
+    createColorHandler(brayns::ModelDescriptor*, const std::string& configPath) const noexcept = 0;
+
+protected:
+    bbp::sonata::Selection
+    _applyPercentage(const bbp::sonata::Selection& srcEdgeSelection) const noexcept
+    {
+        if(_percentage >= 1.f)
+            return srcEdgeSelection;
+
+        const auto edgeIds = srcEdgeSelection.flatten();
+
+        const auto chunk = static_cast<size_t>(edgeIds.size() * _percentage);
+        std::vector<uint64_t> result;
+        result.reserve(chunk);
+        for(size_t i = 0; i < edgeIds.size(); i = i + chunk)
+            result.push_back(edgeIds[i]);
+
+        return bbp::sonata::Selection::fromValues(result);
+    }
 
 protected:
     const bbp::sonata::CircuitConfig& _config;
-    const std::string _populationName;
     const bbp::sonata::EdgePopulation _population;
     const float _percentage;
+    const bool _afferent;
 
 };
 

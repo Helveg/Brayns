@@ -18,18 +18,35 @@
 
 #pragma once
 
-#include <plugin/io/sonata/synapse/SynapseGroup.h>
+#include <plugin/api/CircuitColorHandler.h>
+
+#include <bbp/sonata/config.h>
 
 #include <unordered_map>
 
-class AggregateGroup : public SynapseGroup
+class PopulationColorHandler : public CircuitColorHandler
 {
 public:
-    void addGroup(const std::string& populationName, std::unique_ptr<SynapseGroup>&& group);
+    PopulationColorHandler(brayns::ModelDescriptor* model,
+                           const std::string& configPath,
+                           const std::string& population);
 
-    void mapToCell(const MorphologyInstance&) final;
-    void mapSimulation(const std::unordered_map<uint64_t, uint64_t>&) final;
-    void addToModel(brayns::Model& model) const final;
-private:
-    std::unordered_map<std::string, std::unique_ptr<SynapseGroup>> _aggregation;
+protected:
+    // Its not big in memory, but I guess is worth having it than parsing the config file
+    // on each request?
+    const bbp::sonata::CircuitConfig _config;
+    const std::string _population;
+};
+
+class EdgePopulationColorHandler : public PopulationColorHandler
+{
+public:
+    EdgePopulationColorHandler(brayns::ModelDescriptor* model,
+                               const std::string& configPath,
+                               const std::string& population,
+                               const bool afferent);
+
+protected:
+    const bool _afferent;
+    const std::string _nodePopulation;
 };

@@ -16,27 +16,31 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#include "AggregateGroup.h"
+#include "EndFootColorHandler.h"
 
-void AggregateGroup::addGroup(const std::string& population, std::unique_ptr<SynapseGroup>&& group)
+#include <plugin/api/ColorUtils.h>
+
+void EndFootColorHandler::_setElementsImpl(const std::vector<uint64_t>& ids,
+                                           std::vector<ElementMaterialMap::Ptr>&& elements)
 {
-    _aggregation[population] = std::move(group);
+    _materials.reserve(elements.size());
+    for(const auto& element : elements)
+    {
+        const auto& emm = static_cast<const EndFootMaterialMap&>(*element.get());
+        _materials.insert(_materials.end(), emm.materials.begin(), emm.materials.end());
+    }
 }
 
-void AggregateGroup::mapToCell(const MorphologyInstance& cell)
+void
+EndFootColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector3f>& colorMap)
 {
-    for(const auto& groupEntry : _aggregation)
-        groupEntry.second->mapToCell(cell);
+    ColorRoulette r;
+    for(const auto matId : _materials)
+        _updateMaterial(matId, r.getNextColor());
 }
 
-void AggregateGroup::mapSimulation(const std::unordered_map<uint64_t, uint64_t>& mapping)
+void EndFootColorHandler::_updateSingleColorImpl(const brayns::Vector3f& color)
 {
-    for(const auto& groupEntry : _aggregation)
-        groupEntry.second->mapSimulation(mapping);
-}
-
-void AggregateGroup::addToModel(brayns::Model& model) const
-{
-    for(const auto& groupEntry : _aggregation)
-        groupEntry.second->addToModel(model);
+    for(const auto matId : _materials)
+        _updateMaterial(matId, color);
 }

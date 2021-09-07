@@ -30,7 +30,7 @@ public:
 
     void mapToCell(const MorphologyInstance&) final;
     void mapSimulation(const std::unordered_map<uint64_t, uint64_t>&) final;
-    void addToModel(brayns::Model& model) const final;
+    ElementMaterialMap::Ptr addToModel(brayns::Model& model) const final;
 
 private:
     std::vector<uint64_t> _ids;

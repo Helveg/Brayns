@@ -21,34 +21,68 @@
 namespace
 {
 CircuitColorHandler* getHandler(const uint64_t modelId,
-                                std::unordered_map<uint64_t,
-                                std::unique_ptr<CircuitColorHandler>>& handlers)
+                                const std::vector<std::unique_ptr<CircuitColorHandler>>& handlers)
 {
-    auto it = handlers.find(modelId);
-    if(it == handlers.end())
-        throw std::runtime_error("CircuitColorManager: Model ID " + std::to_string(modelId)
-                                 + " not registered");
+    for(auto& handler : handlers)
+    {
+        if(handler->getModelID() == modelId)
+            return handler.get();
+    }
 
-    return it->second.get();
+    throw std::invalid_argument("CircuitColorManager: Model ID '"
+                                + std::to_string(modelId) + " not registered");
 }
 }
 
-std::unordered_set<std::string>
-CircuitColorManager::getAvailableMethods(const uint64_t modelId)
+void CircuitColorManager::registerHandler(std::unique_ptr<CircuitColorHandler>&& handler)
 {
-    return getHandler(modelId, _handlers)->getAvailableMethods();
+    handler->initialize();
+    _handlers.push_back(std::move(handler));
 }
 
-std::unordered_set<std::string>
-CircuitColorManager::getMethodVariables(const uint64_t modelId, const std::string& method)
+void CircuitColorManager::unregisterHandler(const size_t modelId)
+{
+    auto it = _handlers.begin();
+    while(it != _handlers.end())
+    {
+        if((*it)->getModelID() == modelId)
+        {
+            _handlers.erase(it);
+            break;
+        }
+        else
+            ++it;
+    }
+}
+
+const std::vector<std::string>&
+CircuitColorManager::getAvailableMethods(const uint64_t modelId) const
+{
+    return getHandler(modelId, _handlers)->getMethods();
+}
+
+const std::vector<std::string>&
+CircuitColorManager::getMethodVariables(const uint64_t modelId, const std::string& method) const
 {
     return getHandler(modelId, _handlers)->getMethodVariables(method);
 }
 
 void
+CircuitColorManager::updateColorsById(const uint64_t modelId, const ColorVariables& variables)
+{
+    getHandler(modelId, _handlers)->updateColorById(variables);
+}
+
+void
+CircuitColorManager::updateSingleColor(const uint64_t modelId, const brayns::Vector3f& color)
+{
+    getHandler(modelId, _handlers)->updateSingleColor(color);
+}
+
+void
 CircuitColorManager::updateColors(const uint64_t modelId,
                                   const std::string& method,
-                                  const ColorVariables& variables)
+                                  const ColorVariables& vars)
 {
-    getHandler(modelId, _handlers)->updateColor(method, variables);
+    getHandler(modelId, _handlers)->updateColor(method, vars);
 }

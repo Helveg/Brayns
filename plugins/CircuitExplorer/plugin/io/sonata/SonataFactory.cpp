@@ -48,7 +48,7 @@ SonataFactories::SonataFactories()
     _edgeLoaders.registerProduct<SynapseAstrocytePopulationLoader>("synapse_astrocyte");
 
     _nodeLoaders.registerProduct<AstrocytePopulationLoader>("astrocyte");
-    _nodeLoaders.registerProduct<BiophysicalPopualtionLoader>("biophysical");
+    _nodeLoaders.registerProduct<BiophysicalPopulationLoader>("biophysical");
     _nodeLoaders.registerProduct<VasculaturePopulationLoader>("vasculature");
 
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::REPORT);

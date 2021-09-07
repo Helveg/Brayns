@@ -18,25 +18,27 @@
 
 #include "AstrocytePopulationLoader.h"
 
-#include <plugin/io/sonata/data/SonataCells.h>
+#include <common/log.h>
 
+#include <plugin/io/sonata/data/SonataCells.h>
 #include <plugin/io/sonata/SonataFactory.h>
 #include <plugin/io/sonata/morphology/neuron/NeuronMorphology.h>
 #include <plugin/io/sonata/morphology/neuron/NeuronMorphologyPipeline.h>
 #include <plugin/io/sonata/morphology/neuron/pipeline/RadiusMultiplier.h>
 #include <plugin/io/sonata/morphology/neuron/pipeline/RadiusSmoother.h>
+#include <plugin/io/sonata/populations/nodes/colorhandlers/NeuronColorHandler.h>
 
-#include <common/log.h>
+#include <boost/filesystem.hpp>
 
 namespace
 {
-auto createMorphologyPipeline(const PopulationLoadConfig& loadSettings)
+auto createMorphologyPipeline(const NeuronLoadConfig& loadSettings)
 {
     NeuronMorphologyPipeline pipeline;
     if(loadSettings.radiusMultiplier != 1.f)
         pipeline.registerStage<RadiusMultiplier>(loadSettings.radiusMultiplier);
 
-    if(loadSettings.neuronMode == "smooth")
+    if(loadSettings.mode == "smooth")
         pipeline.registerStage<RadiusSmoother>();
 
     return pipeline;
@@ -62,17 +64,20 @@ AstrocytePopulationLoader::load(const PopulationLoadConfig& loadSettings,
     for(size_t i = 0; i < nodesSize; ++i)
         morphologyMap[morphologies[i]].push_back(i);
 
-    const auto morphologyPipeline = createMorphologyPipeline(loadSettings);
+    const auto morphologyPipeline = createMorphologyPipeline(loadSettings.neurons);
 
     PLUGIN_WARN << "Astrocytes hardcoded h5 morphology type" << std::endl;
 
     for(const auto& entry : morphologyMap)
     {
         // Load morphology
-        const auto morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".h5";
-        NeuronMorphology m (morphPath, loadSettings.neuronSections);
+        std::string morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".swc";
+        if(!boost::filesystem::exists(morphPath))
+            morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".h5";
+
+        NeuronMorphology m (morphPath, loadSettings.neurons.sections);
         morphologyPipeline.process(m);
-        auto builder = factories.neuronBuilders().instantiate(loadSettings.neuronMode);
+        auto builder = factories.neuronBuilders().instantiate(loadSettings.neurons.mode);
         builder->build(m);
 
         // Instantiate the morphology for every cell with such morphology class
@@ -81,4 +86,11 @@ AstrocytePopulationLoader::load(const PopulationLoadConfig& loadSettings,
     }
 
     return result;
+}
+
+std::unique_ptr<CircuitColorHandler>
+AstrocytePopulationLoader::createColorHandler(brayns::ModelDescriptor* model,
+                                              const std::string& config) const noexcept
+{
+    return std::make_unique<NeuronColorHandler>(model, config, _population.name());
 }

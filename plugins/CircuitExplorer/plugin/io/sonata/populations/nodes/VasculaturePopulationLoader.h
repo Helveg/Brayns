@@ -33,4 +33,7 @@ public:
     load(const PopulationLoadConfig& loadSettings,
           const bbp::sonata::Selection& nodeSelection,
           const brayns::LoaderProgress& updateCb) const final;
+
+    std::unique_ptr<CircuitColorHandler>
+    createColorHandler(brayns::ModelDescriptor*, const std::string& config) const noexcept final;
 };

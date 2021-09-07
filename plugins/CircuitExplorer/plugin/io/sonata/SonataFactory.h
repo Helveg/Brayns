@@ -91,7 +91,8 @@ private:
                   EdgePopulationLoader,
                   const bbp::sonata::CircuitConfig&,
                   const std::string&,
-                  const float&> _edgeLoaders;
+                  const float&,
+                  const bool&> _edgeLoaders;
     SonataFactory<std::string,
                   NodePopulationLoader,
                   bbp::sonata::NodePopulation,

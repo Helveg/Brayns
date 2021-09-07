@@ -21,6 +21,8 @@
 #include <brayns/engine/Material.h>
 #include <brayns/engine/Model.h>
 
+#include <plugin/io/sonata/populations/nodes/colorhandlers/NeuronColorHandler.h>
+
 namespace
 {
 inline auto createMatrial(brayns::Model& model)
@@ -37,95 +39,6 @@ SampleNeuronInstance::SampleNeuronInstance(std::vector<brayns::Sphere>&& geometr
  , _data(data)
 {
 }
-
-/*
-void SampleMorphologyInstance::addSynapses(const CellEdgeData& data)
-{
-    const CellSynapseData* synapses = dynamic_cast<const CellSynapseData*>(&data);
-    if(synapses != nullptr)
-    {
-        for(size_t i = 0; i < synapses->edgeIds.size(); ++i)
-        {
-            const auto synapseId = synapses->edgeIds[i];
-            const auto sectionId = synapses->sectionIds[i];
-            const auto& surfacePosition = synapses->surfacePos[i];
-
-            auto it = _sectionGeometry.find(sectionId);
-            // The synapse might belong to a section we havent loaded
-            if(it == _sectionGeometry.end())
-                return;
-
-            // TEMPORARY FIX BECAUSE THE EXAMPLE USES CASES EDGE FILES LACK [afferent|efferent]_section_pos
-            size_t closest = 0;
-            for(size_t i = 0; i < it->second.size() - 1; ++i)
-            {
-                const auto& segment = it->second[i];
-                const auto& p0 = _samples[segment.startGeomId].center;
-                const auto& p1 = _samples[segment.endGeomId].center;
-                const auto d = glm::dot(surfacePosition - p0, surfacePosition - p1);
-                if(d < 0.f)
-                {
-                    closest = i;
-                    break;
-                }
-            }
-
-            const auto synapseGeomId = _samples.size();
-            _samples.push_back(brayns::Sphere(surfacePosition, 0.4f));
-            it->second[closest].synapseGeomIds.push_back({synapseId, synapseGeomId});
-        }
-        return;
-    }
-
-    const AstrocyteSynapseData* astroSynapses = dynamic_cast<const AstrocyteSynapseData*>(&data);
-    if(astroSynapses)
-    {
-        for(size_t i = 0; i < astroSynapses->edgeIds.size(); ++i)
-        {
-            const auto synapseId = astroSynapses->edgeIds[i];
-            const auto sectionId = astroSynapses->sectionIds[i];
-            const auto distance = astroSynapses->distances[i];
-
-            auto it = _sectionGeometry.find(sectionId);
-            // The synapse might belong to a section we havent loaded
-            if(it == _sectionGeometry.end())
-                return;
-
-            float totalDistance = 0.f;
-            std::vector<float> localDistances (it->second.size(), 0.f);
-            for(size_t i = 0; i < it->second.size(); ++i)
-            {
-                const auto& segment = it->second[i];
-                const auto& start = _samples[segment.startGeomId];
-                const auto& end = _samples[segment.endGeomId];
-                const auto dist = glm::length(start.center - end.center);
-                totalDistance += dist;
-                localDistances[i] = dist;
-            }
-            const float invTotalDist = 1.f / totalDistance;
-
-            float traversedDistance = 0.f;
-            for(size_t i = 0; i < localDistances.size(); ++i)
-            {
-                traversedDistance += localDistances[i];
-                const float localNorm = traversedDistance * invTotalDist;
-                if(localNorm >= distance)
-                {
-                    const auto& segment = it->second[i];
-                    const auto& start = _samples[segment.startGeomId];
-                    const auto& end = _samples[segment.endGeomId];
-                    const auto point = glm::lerp(start.center, end.center, distance / localNorm);
-                    const auto synapseGeomId = _samples.size();
-                    _samples.emplace_back(point, 2.f, 0);
-                    it->second[i].synapseGeomIds.push_back({synapseId, synapseGeomId});
-                    break;
-                }
-            }
-        }
-        return;
-    }
-}
-*/
 
 void SampleNeuronInstance::mapSimulation(const size_t globalOffset,
                                          const std::vector<uint16_t>& sectionOffsets,
@@ -161,7 +74,7 @@ void SampleNeuronInstance::mapSimulation(const size_t globalOffset,
     }
 }
 
-void SampleNeuronInstance::addToModel(brayns::Model& model) const
+ElementMaterialMap::Ptr SampleNeuronInstance::addToModel(brayns::Model& model) const
 {
     // Add geometries to the model
     std::unordered_map<NeuronSection, size_t> sectionToMat;
@@ -180,6 +93,19 @@ void SampleNeuronInstance::addToModel(brayns::Model& model) const
 
         model.addSphere(materialId, _samples[i]);
     }
+
+    const auto updateMaterialMap = [&](const NeuronSection section, size_t& buffer)
+    {
+        auto it = sectionToMat.find(section);
+        if(it != sectionToMat.end())
+            buffer = it->second;
+    };
+    auto materialMap = std::make_unique<NeuronMaterialMap>();
+    updateMaterialMap(NeuronSection::SOMA, materialMap->soma);
+    updateMaterialMap(NeuronSection::AXON, materialMap->axon);
+    updateMaterialMap(NeuronSection::DENDRITE, materialMap->dendrite);
+    updateMaterialMap(NeuronSection::APICAL_DENDRITE, materialMap->apicalDendrite);
+    return materialMap;
 }
 
 size_t

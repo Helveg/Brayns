@@ -105,7 +105,11 @@ ModelDescriptor& ModelDescriptor::operator=(const ModelParams& rhs)
     if (rhs.getName().empty())
         _updateValue(_name, fs::path(rhs.getPath()).stem().string());
     else
-        _updateValue(_name, rhs.getName());
+    {
+        // TEMP HACK FFS: Append whatever is on name to the model params name
+        const auto extraName = _name.empty()? "" : " - " + _name;
+        _updateValue(_name, rhs.getName() + extraName);
+    }
     _updateValue(_path, rhs.getPath());
     _updateValue(_visible, rhs.getVisible());
 

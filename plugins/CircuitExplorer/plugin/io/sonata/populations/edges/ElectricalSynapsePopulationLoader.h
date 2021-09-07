@@ -25,8 +25,9 @@ class ElectricalSynapsePopulation: public CommonEdgePopulationLoader
 public:
     ElectricalSynapsePopulation(const bbp::sonata::CircuitConfig& config,
                                 const std::string& population,
-                                const float percentage)
-      : CommonEdgePopulationLoader(config, population, percentage)
+                                const float percentage,
+                                const bool afferent)
+      : CommonEdgePopulationLoader(config, population, percentage, afferent)
     {
     }
 };

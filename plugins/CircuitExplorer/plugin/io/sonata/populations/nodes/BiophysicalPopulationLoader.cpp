@@ -25,16 +25,17 @@
 #include <plugin/io/sonata/morphology/neuron/NeuronMorphologyPipeline.h>
 #include <plugin/io/sonata/morphology/neuron/pipeline/RadiusMultiplier.h>
 #include <plugin/io/sonata/morphology/neuron/pipeline/RadiusSmoother.h>
+#include <plugin/io/sonata/populations/nodes/colorhandlers/NeuronColorHandler.h>
 
 namespace
 {
-auto createMorphologyPipeline(const PopulationLoadConfig& loadSettings)
+auto createMorphologyPipeline(const NeuronLoadConfig& loadSettings)
 {
     NeuronMorphologyPipeline pipeline;
     if(loadSettings.radiusMultiplier != 1.f)
         pipeline.registerStage<RadiusMultiplier>(loadSettings.radiusMultiplier);
 
-    if(loadSettings.neuronMode == "smooth")
+    if(loadSettings.mode == "smooth")
         pipeline.registerStage<RadiusSmoother>();
 
     return pipeline;
@@ -42,7 +43,7 @@ auto createMorphologyPipeline(const PopulationLoadConfig& loadSettings)
 } // namespace
 
 std::vector<MorphologyInstancePtr>
-BiophysicalPopualtionLoader::load(const PopulationLoadConfig& loadSettings,
+BiophysicalPopulationLoader::load(const PopulationLoadConfig& loadSettings,
                                   const bbp::sonata::Selection& nodeSelection,
                                   const brayns::LoaderProgress& updateCb) const
 {
@@ -60,15 +61,15 @@ BiophysicalPopualtionLoader::load(const PopulationLoadConfig& loadSettings,
     for(size_t i = 0; i < nodesSize; ++i)
         morphologyMap[morphologies[i]].push_back(i);
 
-    const auto morphologyPipeline = createMorphologyPipeline(loadSettings);
+    const auto morphologyPipeline = createMorphologyPipeline(loadSettings.neurons);
 
     for(const auto& entry : morphologyMap)
     {
         // Load morphology
         const auto morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".swc";
-        NeuronMorphology m (morphPath, loadSettings.neuronSections);
+        NeuronMorphology m (morphPath, loadSettings.neurons.sections);
         morphologyPipeline.process(m);
-        auto builder = factories.neuronBuilders().instantiate(loadSettings.neuronMode);
+        auto builder = factories.neuronBuilders().instantiate(loadSettings.neurons.mode);
         builder->build(m);
 
         // Instantiate the morphology for every cell with such morphology class
@@ -77,4 +78,11 @@ BiophysicalPopualtionLoader::load(const PopulationLoadConfig& loadSettings,
     }
 
     return result;
+}
+
+std::unique_ptr<CircuitColorHandler>
+BiophysicalPopulationLoader::createColorHandler(brayns::ModelDescriptor *model,
+                                                const std::string& config) const noexcept
+{
+    return std::make_unique<NeuronColorHandler>(model, config, _population.name());
 }

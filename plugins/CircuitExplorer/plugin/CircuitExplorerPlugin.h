@@ -23,6 +23,7 @@
 #define MEMBRANELESS_ORGANELLES_PLUGIN_H
 
 #include <plugin/api/CellObjectMapper.h>
+#include <plugin/api/CircuitColorManager.h>
 #include <plugin/api/CircuitExplorerParams.h>
 #include <plugin/io/AbstractCircuitLoader.h>
 
@@ -127,6 +128,15 @@ private:
     brayns::Message _mirrorModel(const MirrorModel& payload);
     brayns::Message _changeCircuitThickness(const CircuitThickness& payload);
 
+    brayns::Message _colorCircuitById(const RequestColorCircuitById& payload);
+    brayns::Message _colorCircuitBySingleColor(const RequestColorCircuitBySingleColor& payload);
+    CircuitColorMethods _requestCircuitColorMethods(const ModelId& payload);
+    CircuitColorMethodVariables
+    _requestCircuitColorMethodVariables(const RequestCircuitColorMethodVariables& payload);
+    brayns::Message _colorCircuitByMethod(const RequestColorCircuitByMethod& payload);
+
+private:
+
     SynapseAttributes _synapseAttributes;
 
     bool _dirty{false};
@@ -142,5 +152,7 @@ private:
     std::string _exportFrameErrorMessage;
 
     std::vector<std::unique_ptr<CellObjectMapper>> _mappers;
+
+    CircuitColorManager _colorManager;
 };
 #endif

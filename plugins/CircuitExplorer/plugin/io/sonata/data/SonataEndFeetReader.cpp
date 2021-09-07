@@ -22,7 +22,13 @@
 
 #include <mutex>
 
-#include <common/log.h>
+namespace
+{
+constexpr char rootGroup[]      = "/objects";
+constexpr char endFootGroup[]   = "endfoot_";
+constexpr char pointDataset[]   = "points";
+constexpr char triangleDataset[]= "triangles";
+}
 
 std::vector<brayns::TriangleMesh>
 SonataEndFeetReader::readEndFeet(const std::string& filePath,
@@ -36,33 +42,30 @@ SonataEndFeetReader::readEndFeet(const std::string& filePath,
         file = std::make_unique<HighFive::File>(filePath);
     }
 
-    const auto root = file->getGroup("/objects");
+    const auto root = file->getGroup(rootGroup);
 
     std::vector<brayns::TriangleMesh> result (ids.size());
-
-    PLUGIN_WARN << "SURFACE POSITIONS ARE NOT BEING APPLIED TO ENDFEET MESHES" << std::endl;
 
     for(size_t i = 0; i < ids.size(); ++i)
     {
         auto& mesh = result[i];
 
-        const auto endFootGroupName = "endfoot_" + std::to_string(ids[i]);
+        const auto endFootGroupName = endFootGroup + std::to_string(ids[i]);
         const auto endFootGroup = root.getGroup(endFootGroupName);
 
-        const auto vertexDataSet = endFootGroup.getDataSet("points");
+        const auto vertexDataSet = endFootGroup.getDataSet(pointDataset);
         std::vector<std::vector<float>> rawVertices;
         vertexDataSet.select({0, 0}, vertexDataSet.getDimensions()).read(rawVertices);
 
         mesh.vertices.resize(rawVertices.size());
         for(size_t j = 0; j < rawVertices.size(); ++j)
         {
-            //const auto& pos = positions[i];
-            mesh.vertices[j].x = rawVertices[j][0];// + pos.x;
-            mesh.vertices[j].y = rawVertices[j][1];// + pos.y;
-            mesh.vertices[j].z = rawVertices[j][2];// + pos.z;
+            mesh.vertices[j].x = rawVertices[j][0];
+            mesh.vertices[j].y = rawVertices[j][1];
+            mesh.vertices[j].z = rawVertices[j][2];
         }
 
-        const auto triangleDataSet = endFootGroup.getDataSet("triangles");
+        const auto triangleDataSet = endFootGroup.getDataSet(triangleDataset);
         std::vector<std::vector<uint32_t>> rawTriangles;
         triangleDataSet.select({0, 0}, triangleDataSet.getDimensions()).read(rawTriangles);
 
@@ -73,6 +76,12 @@ SonataEndFeetReader::readEndFeet(const std::string& filePath,
             mesh.indices[j].y = rawTriangles[j][1];
             mesh.indices[j].z = rawTriangles[j][2];
         }
+
+        // Adjust mesh position given the endfoot surface position
+        const auto meshBounds = brayns::createMeshBounds(mesh);
+        const auto translation = meshBounds.getCenter() - positions[i];
+        for(auto& vertex : mesh.vertices)
+            vertex += translation;
     }
 
     return result;

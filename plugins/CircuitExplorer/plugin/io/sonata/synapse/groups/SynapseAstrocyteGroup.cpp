@@ -18,6 +18,8 @@
 
 #include "SynapseAstrocyteGroup.h"
 
+#include <plugin/io/sonata/populations/edges/colorhandlers/CommonEdgeColorHandler.h>
+
 void SynapseAstrocyteGroup::addSynapse(const uint64_t id,
                                        const int32_t section,
                                        const float distance)
@@ -81,12 +83,16 @@ void SynapseAstrocyteGroup::mapSimulation(const std::unordered_map<uint64_t, uin
     }
 }
 
-void SynapseAstrocyteGroup::addToModel(brayns::Model& model) const
+ElementMaterialMap::Ptr SynapseAstrocyteGroup::addToModel(brayns::Model& model) const
 {
+    auto result = std::make_unique<SurfaceEdgeMaterialMap>();
+    result->materials.reserve(_addedSynapses.size());
     for(size_t i = 0; i < _addedSynapses.size(); ++i)
     {
         const auto matId = model.getMaterials().size();
         model.createMaterial(matId, "");
         model.addSDFGeometry(matId, _geometry[i], {});
+        result->materials.push_back({_ids[_addedSynapses[i]], matId});
     }
+    return result;
 }

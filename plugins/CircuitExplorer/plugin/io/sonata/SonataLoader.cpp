@@ -29,22 +29,20 @@
 #include <brayns/common/utils/stringUtils.h>
 #include <brayns/engine/Scene.h>
 
-
 namespace
 {
-
 inline auto selectNodes(const bbp::sonata::CircuitConfig& config,
-                        const PopulationLoadConfig& loadConfig)
+                        const NodeLoadConfig& loadConfig)
 {
     NodeSelection selection;
     selection.select(config, loadConfig.name, loadConfig.nodeSets);
-    selection.select(loadConfig.nodeIds);
+    selection.select(loadConfig.ids);
     selection.select(loadConfig.simulationType, loadConfig.simulationPath, loadConfig.name);
     return selection.intersection(loadConfig.percentage);
 }
 
 inline NodeSimulationLoaderPtr
-instantiateNodeSimulation(const SonataFactories& factories, const PopulationLoadConfig& config)
+instantiateNodeSimulation(const SonataFactories& factories, const NodeLoadConfig& config)
 {
     if(config.simulationType == SimulationType::NONE)
         return {nullptr};
@@ -57,7 +55,7 @@ instantiateNodeSimulation(const SonataFactories& factories, const PopulationLoad
 inline std::unique_ptr<NodePopulationLoader>
 instantiateNodes(const SonataFactories& factories,
                  const bbp::sonata::CircuitConfig& circuitConfig,
-                 const PopulationLoadConfig& loadConfig)
+                 const NodeLoadConfig& loadConfig)
 {
     auto properties = circuitConfig.getNodePopulationProperties(loadConfig.name);
     return factories.nodeLoaders().instantiate(properties.type,
@@ -68,14 +66,11 @@ instantiateNodes(const SonataFactories& factories,
 inline std::unique_ptr<EdgePopulationLoader>
 instantiateEdges(const SonataFactories& factories,
                  const bbp::sonata::CircuitConfig& circuitConfig,
-                 const std::string& edgePopulation,
-                 const float percentage)
+                 const EdgeLoadConfig& config)
 {
-    const auto type = circuitConfig.getEdgePopulationProperties(edgePopulation).type;
-    return factories.edgeLoaders().instantiate(type,
-                                               circuitConfig,
-                                               edgePopulation,
-                                               percentage);
+    const auto type = circuitConfig.getEdgePopulationProperties(config.name).type;
+    return factories.edgeLoaders().instantiate(type, circuitConfig, config.name,
+                                               config.percentage, config.afferent);
 }
 
 inline brayns::ModelDescriptorPtr createModelDescriptor(const std::string& name,
@@ -95,8 +90,9 @@ inline brayns::ModelDescriptorPtr createModelDescriptor(const std::string& name,
 } // namespace
 
 
-SonataLoader::SonataLoader(brayns::Scene& scene)
+SonataLoader::SonataLoader(brayns::Scene& scene, CircuitColorManager& colorManager)
  : brayns::Loader(scene)
+ , _colorManager(colorManager)
 {
     PLUGIN_INFO << "Registering " << getName() << std::endl;
 }
@@ -146,20 +142,27 @@ SonataLoader::importFromFile(const std::string& path,
     // Load each population
     std::vector<brayns::ModelDescriptorPtr> result;
 
-    for(size_t i = 0; i < requestedPopulations.size(); ++i)
+    for(const auto& loadConfig : requestedPopulations)
     {
-        const auto& loadConfig = requestedPopulations[i];
-        const auto nodeSelection = selectNodes(config, loadConfig);
-        const auto nodeSize = nodeSelection.flatSize();
+        const auto& node = loadConfig.node;
+        const auto nodeSelection = selectNodes(config, node);
 
         if(nodeSelection.empty())
-            throw std::runtime_error("Population " + loadConfig.name + " node selection is empty");
+            throw std::runtime_error("Population "+node.name+" node selection is empty");
 
+        // ---------------------------------------------------------------------------------
         // LOAD NODES
-        const auto nodeLoader  = instantiateNodes(factories, config, loadConfig);
+        // ---------------------------------------------------------------------------------
+        const auto nodeIDs = nodeSelection.flatten();
+        const auto nodeLoader  = instantiateNodes(factories, config, node);
         auto nodes = nodeLoader->load(loadConfig, nodeSelection, callback);
+        if(nodes.empty())
+            continue;
 
-        const auto simulation = instantiateNodeSimulation(factories, loadConfig);
+        brayns::ModelPtr nodeMmodel = _scene.createModel();
+
+        // Attach simulation, if any
+        const auto simulation = instantiateNodeSimulation(factories, node);
         if(simulation)
         {
             const auto mapping = simulation->loadMapping(nodeSelection);
@@ -168,72 +171,95 @@ SonataLoader::importFromFile(const std::string& path,
                 const auto& cm = mapping[i];
                 nodes[i]->mapSimulation(cm.globalOffset, cm.offsets, cm.compartments);
             }
-        }
-
-        brayns::ModelPtr nodeMmodel = _scene.createModel();
-        for(const auto& node : nodes)
-            node->addToModel(*nodeMmodel);
-        nodeMmodel->updateBounds();
-        if(simulation)
-        {
             nodeMmodel->setSimulationHandler(simulation->createSimulationHandler(nodeSelection));
-            SetSONATATransferFunction(_scene.getTransferFunction());
         }
 
+        // Add geometry to model and get the material mapping
+        std::vector<ElementMaterialMap::Ptr> materialMaps;
+        materialMaps.reserve(nodes.size());
+        for(const auto& node : nodes)
+            materialMaps.push_back(node->addToModel(*nodeMmodel));
+        nodeMmodel->updateBounds();
+
+        // Create the model descriptor
         brayns::ModelMetadata nodeMetadata = {
-            {"Population", loadConfig.name},
-            {"Type", config.getNodePopulationProperties(loadConfig.name).type},
-            {"Report", loadConfig.simulationPath},
-            {"Node Sets", brayns::string_utils::join(loadConfig.nodeSets, ",")},
-            {"Number of nodes", std::to_string(nodeSelection.flatSize())},
+            {"Population", node.name},
+            {"Type", config.getNodePopulationProperties(node.name).type},
+            {"Report", node.simulationPath},
+            {"Node Sets", brayns::string_utils::join(node.nodeSets, ",")},
+            {"Number of nodes", std::to_string(nodeIDs.size())},
             {"Circuit Path", path}
         };
+        result.push_back(createModelDescriptor(node.name, path, nodeMetadata, nodeMmodel));
+        auto nodeModelPtr = result.back().get();
+        nodeModelPtr->setName(node.name);
 
-        result.push_back(createModelDescriptor(loadConfig.name, path, nodeMetadata, nodeMmodel));
-        PLUGIN_INFO << "Loaded node population " << loadConfig.name << std::endl;
-
-        // LOAD EDGES
-        for(size_t i = 0; i < loadConfig.edgePopulations.size(); ++i)
+        // Create the color handler
+        auto nodeColorHandler = nodeLoader->createColorHandler(nodeModelPtr, path);
+        nodeColorHandler->setElements(nodeIDs, std::move(materialMaps));
+        nodeModelPtr->onRemoved([cmPtr = &_colorManager](const brayns::ModelDescriptor& m)
         {
-            const auto& edgePop = loadConfig.edgePopulations[i];
+            cmPtr->unregisterHandler(m.getModelID());
+        });
+        _colorManager.registerHandler(std::move(nodeColorHandler));
 
-            const auto edgePerc = loadConfig.edgePercentages[i];
-            const auto& edgeMode = loadConfig.edgeLoadModes[i];
 
-            const auto edgeLoader = instantiateEdges(factories, config, edgePop, edgePerc);
-            const auto edges = edgeLoader->load(loadConfig, nodeSelection, edgeMode == "afferent");
+        PLUGIN_INFO << "Loaded node population " << node.name << std::endl;
+
+        // ---------------------------------------------------------------------------------
+        // LOAD EDGES
+        // ---------------------------------------------------------------------------------
+        for(const auto& edge : loadConfig.edges)
+        {
+            const auto edgeLoader = instantiateEdges(factories, config, edge);
+            const auto edges = edgeLoader->load(loadConfig, nodeSelection);
             if(edges.empty())
                 continue;
 
-            brayns::ModelPtr edgeModel = _scene.createModel();
-
+            // Map to the node geometry to which they belong
             for(size_t j = 0; j < nodes.size(); ++j)
                 edges[j]->mapToCell(*nodes[j]);
 
-            std::string edgeReport = "";
-            if(!loadConfig.edgeReports.empty() && !loadConfig.edgeReports[i].empty())
+            // Attach simulation, if any
+            if(!edge.report.empty())
             {
-                edgeReport = loadConfig.edgeReports[i];
-                const EdgeCompartmentLoader loader (loadConfig.edgeReports[i], edgePop);
+                const EdgeCompartmentLoader loader (edge.report, edge.name);
                 const auto mapping = loader.loadMapping(nodeSelection);
-                for(size_t j = 0; j < edges.size(); ++j)
-                    edges[i]->mapSimulation(mapping[j].offsets);
+                for(size_t j = 0; j < nodes.size(); ++j)
+                    edges[j]->mapSimulation(mapping[j].offsets);
             }
 
+            // Add geometry to model and get the material mapping
+            brayns::ModelPtr edgeModel = _scene.createModel();
+            std::vector<ElementMaterialMap::Ptr> edgeMaterialMaps (nodes.size());
             for(size_t j = 0; j < nodes.size(); ++j)
-                edges[j]->addToModel(*edgeModel);
+                edgeMaterialMaps[j] = edges[j]->addToModel(*edgeModel);
 
+            // Create the model descriptor
             brayns::ModelMetadata edgeMetadata = {
-                {"Population", edgePop},
-                {"Type", config.getEdgePopulationProperties(edgePop).type},
-                {"Report", edgeReport},
+                {"Population", edge.name},
+                {"Type", config.getEdgePopulationProperties(edge.name).type},
+                {"Report", edge.report},
                 {"Circuit Path", path}
             };
+            result.push_back(createModelDescriptor(edge.name, path, edgeMetadata, edgeModel));
+            auto edgeModelPtr = result.back().get();
+            edgeModelPtr->setName(edge.name);
 
-            result.push_back(createModelDescriptor(edgePop, path, edgeMetadata, edgeModel));
+            // Create the color handler
+            auto edgeColorHandler = edgeLoader->createColorHandler(edgeModelPtr, path);
+            edgeColorHandler->setElements(nodeIDs, std::move(edgeMaterialMaps));
+            edgeModelPtr->onRemoved([cmPtr = &_colorManager](const brayns::ModelDescriptor& m)
+            {
+                cmPtr->unregisterHandler(m.getModelID());
+            });
+            _colorManager.registerHandler(std::move(edgeColorHandler));
 
-            PLUGIN_INFO << "Loaded " <<edgePop<< " for " <<loadConfig.name<< " nodes" << std::endl;
+            PLUGIN_INFO << "Loaded " <<edge.name<< " for " <<node.name<< " nodes" << std::endl;
         }
     }
+
+    SetSONATATransferFunction(_scene.getTransferFunction());
+
     return result;
 }

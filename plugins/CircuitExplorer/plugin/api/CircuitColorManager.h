@@ -18,35 +18,31 @@
 
 #pragma once
 
-#include <type_traits>
-#include <unordered_map>
-#include <unordered_set>
+#include <vector>
 
 #include <plugin/api/CircuitColorHandler.h>
 
+/**
+ * @brief The CircuitColorManager class is in charge of registering the color handlers of each
+ *        loaded circuit and give access to them based on the model ID
+ */
 class CircuitColorManager
 {
 public:
-    template<class Handler, typename ...Args>
-    void registerHandler(brayns::ModelDescriptor* model, Args&&...args)
-    {
-        static_assert (std::is_base_of<CircuitColorHandler, Handler>::value,
-                       "Attempted to register a non CircuitColorHandler class");
+    void registerHandler(std::unique_ptr<CircuitColorHandler>&& handler);
+    void unregisterHandler(const size_t modelId);
 
-        _handlers[model->getModelID()] = std::make_unique<Handler>(std::forward<Args>(args)...);
-    }
+    const std::vector<std::string>& getAvailableMethods(const uint64_t modelId) const;
 
-    std::unordered_set<std::string>
-    getAvailableMethods(const uint64_t modelId);
+    const std::vector<std::string>& getMethodVariables(const uint64_t modelId,
+                                                       const std::string& method) const;
 
-    std::unordered_set<std::string>
-    getMethodVariables(const uint64_t modelId, const std::string& method);
+    void updateColorsById(const uint64_t modelId, const ColorVariables& variables);
 
-    void
-    updateColors(const uint64_t modelId,
-                 const std::string& method,
-                 const ColorVariables& variables);
+    void updateSingleColor(const uint64_t modelId, const brayns::Vector3f& color);
+
+    void updateColors(const uint64_t modelId, const std::string& method, const ColorVariables& vars);
 
 private:
-    std::unordered_map<uint64_t, std::unique_ptr<CircuitColorHandler>> _handlers;
+    std::vector<std::unique_ptr<CircuitColorHandler>> _handlers;
 };

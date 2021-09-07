@@ -18,19 +18,18 @@
 
 #include "SynapseAstrocytePopulationLoader.h"
 
-#include <plugin/io/sonata/SonataFactory.h>
 #include <plugin/io/sonata/data/SonataSynapses.h>
-#include <plugin/io/sonata/synapse/groups/AggregateGroup.h>
+#include <plugin/io/sonata/populations/edges/colorhandlers/CommonEdgeColorHandler.h>
 #include <plugin/io/sonata/synapse/groups/SynapseAstrocyteGroup.h>
 
 std::vector<std::unique_ptr<SynapseGroup>>
 SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig& loadConfig,
-                                       const bbp::sonata::Selection& nodeSelection,
-                                       const bool afferent) const
+                                       const bbp::sonata::Selection& nodeSelection) const
 {
     const auto baseNodeList = nodeSelection.flatten();
 
-    if(afferent)
+    // Astrocyte synapse
+    if(!_afferent)
     {
         // Fill it by mapping node ID to synapse list in case there is a node Id without synapses,
         // so we can still place an empty vector at the end
@@ -38,12 +37,12 @@ SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig& loadConfig,
         for(const auto nodeId : baseNodeList)
             mapping[nodeId] = std::make_unique<SynapseAstrocyteGroup>();
 
-        const auto edgeSelection = _population.afferentEdges(baseNodeList);
+        const auto edgeSelection = _applyPercentage(_population.efferentEdges(baseNodeList));
         const auto edgeIds = edgeSelection.flatten();
         const auto srcNodes = SonataSynapses::getSourceNodes(_population, edgeSelection);
-        const auto sectionIds = SonataSynapses::getAfferentAstrocyteSectionIds(_population,
+        const auto sectionIds = SonataSynapses::getEfferentAstrocyteSectionIds(_population,
                                                                                edgeSelection);
-        const auto distances = SonataSynapses::getAfferentAstrocyteSectionDistances(_population,
+        const auto distances = SonataSynapses::getEfferentAstrocyteSectionDistances(_population,
                                                                                     edgeSelection);
 
         if(srcNodes.size() != sectionIds.size() || srcNodes.size() != distances.size())
@@ -68,33 +67,15 @@ SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig& loadConfig,
 
         return synapses;
     }
+    // Neuron post sypnapse
     else
-    {
-        const auto edgeSelection = _population.efferentEdges(baseNodeList);
+        throw std::runtime_error("synapse_astrocyte population should have been splitted at loading. "
+                                 "This should not have happened");
+}
 
-        std::vector<std::unique_ptr<SynapseGroup>> result (baseNodeList.size());
-        for(size_t i = 0; i < baseNodeList.size(); ++i)
-            result[i] = std::make_unique<AggregateGroup>();
-
-        const auto populations = _population.getAttribute<std::string>("synapse_population",
-                                                                       edgeSelection);
-        const SonataFactories factories;
-
-        for(const auto& population : populations)
-        {
-            const auto properties = _config.getEdgePopulationProperties(population);
-            const auto edgeLoader = factories.edgeLoaders().instantiate(properties.type,
-                                                                        _config,
-                                                                        population,
-                                                                        _percentage);
-
-            auto synapses = edgeLoader->load(loadConfig, nodeSelection, false);
-            for(size_t i = 0; i < synapses.size(); ++i)
-            {
-                auto& group = static_cast<AggregateGroup&>(*result[i].get());
-                group.addGroup(population, std::move(synapses[i]));
-            }
-        }
-        return result;
-    }
+std::unique_ptr<CircuitColorHandler>
+SynapseAstrocytePopulationLoader::createColorHandler(brayns::ModelDescriptor *model,
+                                                     const std::string& config) const noexcept
+{
+    return std::make_unique<CommonEdgeColorHandler>(model, config, _population.name(), _afferent);
 }

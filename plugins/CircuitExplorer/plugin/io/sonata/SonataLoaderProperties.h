@@ -128,26 +128,60 @@ const brayns::Property PROPERTY_VASCULATUREPARTS = {
 };
 
 /**
+ * @brief The NodeLoadConfig struct configures the node population to be loaded
+ */
+struct NodeLoadConfig
+{
+    std::string name;
+    float percentage;
+    std::vector<uint64_t> ids;
+    std::vector<std::string> nodeSets;
+    SimulationType simulationType;
+    std::string simulationPath;
+};
+
+/**
+ * @brief The EdgeLoadConfig struct configures each edge population to be loaded
+ */
+struct EdgeLoadConfig
+{
+    std::string name;
+    bool afferent;
+    float percentage;
+    std::string report;
+};
+
+/**
+ * @brief The NeuronLoadConfig struct configures how to load neuron morphologies
+ *        (neurons / astrocytes)
+ */
+struct NeuronLoadConfig
+{
+    float radiusMultiplier;
+    std::set<NeuronSection> sections;
+    std::string mode;
+};
+
+/**
+ * @brief The VasculatureLoadConfig struct configures how to load vasculature morphologies
+ */
+struct VasculatureLoadConfig
+{
+    float radiusMultiplier;
+    std::set<VasculatureSection> sections;
+};
+
+/**
  * @brief The PopulationLoadConfig struct holds the parsed information specified by the
  *        user to configure the loading of a node population
  */
 struct PopulationLoadConfig
 {
     std::string configPath;
-    std::string name;
-    float percentage;
-    std::vector<uint64_t> nodeIds;
-    std::vector<std::string> nodeSets;
-    SimulationType simulationType;
-    std::string simulationPath;
-    std::vector<std::string> edgePopulations;
-    std::vector<std::string> edgeLoadModes;
-    std::vector<float> edgePercentages;
-    std::vector<std::string> edgeReports;
-    float radiusMultiplier;
-    std::unordered_set<NeuronSection> neuronSections;
-    std::string neuronMode;
-    std::unordered_set<VasculatureSection> vasculatureSections;
+    NodeLoadConfig node;
+    std::vector<EdgeLoadConfig> edges;
+    NeuronLoadConfig neurons;
+    VasculatureLoadConfig vasculature;
 };
 
 /**

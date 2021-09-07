@@ -23,7 +23,7 @@
 #include <brayns/common/mathTypes.h>
 
 #include <string>
-#include <unordered_set>
+#include <set>
 #include <vector>
 
 /**
@@ -65,8 +65,7 @@ public:
     };
 
 public:
-    NeuronMorphology(const std::string& path,
-                     const std::unordered_set<NeuronSection>& sectionsToLoad);
+    NeuronMorphology(const std::string& path, const std::set<NeuronSection>& sectionsToLoad);
 
     bool hasSoma() const noexcept;
     Soma& soma();

@@ -22,6 +22,7 @@
 
 #include <plugin/io/sonata/data/SonataEndFeetReader.h>
 #include <plugin/io/sonata/data/SonataSynapses.h>
+#include <plugin/io/sonata/populations/edges/colorhandlers/EndFootColorHandler.h>
 #include <plugin/io/sonata/synapse/groups/EndFootGroup.h>
 
 #include <nlohmann/json.hpp>
@@ -59,20 +60,19 @@ std::string getEndFeetAreasPath(const bbp::sonata::CircuitConfig& config,
 
 std::vector<std::unique_ptr<SynapseGroup>>
 EndFootPopulationLoader::load(const PopulationLoadConfig& loadConfig,
-                              const bbp::sonata::Selection& nodeSelection,
-                              const bool afferent) const
+                              const bbp::sonata::Selection& nodeSelection) const
 {
-    if(!afferent)
-        throw std::runtime_error("Efferent edges not supported on endfoot connectivity");
+    if(_afferent)
+        throw std::runtime_error("Afferent edges not supported on endfoot connectivity");
 
     PLUGIN_WARN << "CURRENTLY obtaining the endfeet_areas file is hardcoded" << std::endl;
 
     const auto basePath = boost::filesystem::path(loadConfig.configPath).parent_path().string();
-    auto path = getEndFeetAreasPath(_config, _populationName, basePath) + "/endfeet_areas.h5";
+    auto path = getEndFeetAreasPath(_config, _population.name(), basePath) + "/endfeet_areas.h5";
 
     const auto nodes = nodeSelection.flatten();
 
-    const auto edgeSelection = _population.afferentEdges(nodes);
+    const auto edgeSelection = _applyPercentage(_population.efferentEdges(nodes));
     const auto flatEdges = edgeSelection.flatten();
     const auto sourceNodes = SonataSynapses::getSourceNodes(_population, edgeSelection);
     const auto endFeetIds = SonataSynapses::getEndFeetIds(_population, edgeSelection);
@@ -80,29 +80,30 @@ EndFootPopulationLoader::load(const PopulationLoadConfig& loadConfig,
 
     auto meshes = SonataEndFeetReader::readEndFeet(path, endFeetIds, endFeetPos);
 
-    // XXX
-
+    // Initialize for every node, so the flat result will have a group for every node
+    // (even if its empty, which allows to simply use vectors)
     std::map<uint64_t, std::unique_ptr<SynapseGroup>> mapping;
     for(const auto nodeId : nodes)
         mapping[nodeId] = std::make_unique<EndFootGroup>();
 
+    // Group endfeet by the node id they belong to
     for(size_t i = 0; i < endFeetIds.size(); ++i)
     {
         EndFootGroup& group = static_cast<EndFootGroup&>(*mapping[sourceNodes[i]].get());
         group.addSynapse(endFeetIds[i], std::move(meshes[i]));
     }
 
+    // Flatten
     std::vector<std::unique_ptr<SynapseGroup>> result (nodes.size());
-
     for(size_t i = 0; i < nodes.size(); ++i)
         result[i] = std::move(mapping[nodes[i]]);
 
-    /*
-    result.push_back(std::make_unique<EndFootGroup>());
-    EndFootGroup& group = static_cast<EndFootGroup&>(*result.back().get());
-    for(size_t i = 0; i < endFeetIds.size(); ++i)
-        group.addSynapse(endFeetIds[i], std::move(meshes[i]));
-    */
-
     return result;
+}
+
+std::unique_ptr<CircuitColorHandler>
+EndFootPopulationLoader::createColorHandler(brayns::ModelDescriptor *model,
+                                            const std::string& config) const noexcept
+{
+    return std::make_unique<EndFootColorHandler>(model, config, _population.name(), _afferent);
 }

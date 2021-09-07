@@ -19,8 +19,10 @@
 #include "VasculaturePopulationLoader.h"
 
 #include <plugin/io/sonata/data/SonataVasculature.h>
-#include <plugin/io/sonata/morphology/vasculature/VasculatureMorphology.h>
-#include <plugin/io/sonata/morphology/vasculature/VasculatureSDFBuilder.h>
+#include <plugin/io/sonata/morphology/vasculature/VasculatureInstance.h>
+#include <plugin/io/sonata/populations/nodes/colorhandlers/VasculatureColorHandler.h>
+
+#include <set>
 
 std::vector<MorphologyInstancePtr>
 VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
@@ -31,47 +33,52 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
     const auto startRadii = SonataVasculature::getSegmentStartRadii(_population, selection);
     const auto endPoints = SonataVasculature::getSegmentEndPoints(_population, selection);
     const auto endRadii = SonataVasculature::getSegmentEndRadii(_population, selection);
-    const auto sectionIds = SonataVasculature::getSegmentSectionIds(_population, selection);
     const auto sectionTypes = SonataVasculature::getSegmentSectionTypes(_population, selection);
-    const auto startNodes = SonataVasculature::getSegmentStartNodes(_population, selection);
 
     std::vector<MorphologyInstancePtr> result (startPoints.size());
+    const auto radMult = loadSettings.vasculature.radiusMultiplier;
+
+    constexpr VasculatureSection allSections[] =
+    {
+        VasculatureSection::ARTERIAL_CAPILLARY,
+        VasculatureSection::ARTERIOLE,
+        VasculatureSection::ARTERY,
+        VasculatureSection::TRANSITIONAL,
+        VasculatureSection::VEIN,
+        VasculatureSection::VENOUS_CAPILLARY,
+        VasculatureSection::VENULE
+    };
+
+    const auto& requestedSections = loadSettings.vasculature.sections;
+
+    bool loadAll = true;
+    for(const auto section : allSections)
+    {
+        if(requestedSections.find(section) == requestedSections.end())
+        {
+            loadAll = false;
+            break;
+        }
+    }
+
     for(size_t i = 0; i < startPoints.size(); ++i)
     {
-        VasculatureMorphology morphology;
-        morphology.sections().emplace_back();
-        auto& section = morphology.sections().back();
-        section.id = sectionIds[i];
-        section.parentId = sectionIds[startNodes[i]];
-        section.type = sectionTypes[i];
-        section.segments.push_back({startPoints[i], startRadii[i], endPoints[i], endRadii[i]});
+        if(!loadAll && requestedSections.find(sectionTypes[i]) == requestedSections.end())
+            continue;
 
-        result[i] = VasculatureSDFBuilder().build(morphology);
+        result[i] = std::make_unique<VasculatureInstance>(startPoints[i],
+                                                          startRadii[i] * radMult,
+                                                          endPoints[i],
+                                                          endRadii[i] * radMult,
+                                                          sectionTypes[i]);
     }
-
-    /*
-    uint32_t highestSection = 0;
-    for(const auto sectionId : sectionIds)
-        highestSection = sectionId > highestSection? sectionId : highestSection;
-
-    VasculatureMorphology morphology;
-    auto& sections = morphology.sections();
-    sections.resize(highestSection + 1);
-
-    for(size_t i = 0; i < sectionIds.size(); ++i)
-    {
-        auto secId = sectionIds[i];
-        sections[secId].id = secId;
-        sections[secId].parentId = sectionIds[startNodes[i]];
-        sections[secId].type = sectionTypes[i];
-        sections[secId].segments.push_back({startPoints[i], startRadii[i], endPoints[i], endRadii[i]});
-    }
-
-    auto morphologyInstance = VasculatureSDFBuilder().build(morphology);
-
-    std::vector<MorphologyInstancePtr> result;
-    result.push_back(std::move(morphologyInstance));
-    */
 
     return result;
+}
+
+std::unique_ptr<CircuitColorHandler>
+VasculaturePopulationLoader::createColorHandler(brayns::ModelDescriptor *model,
+                                                const std::string& config) const noexcept
+{
+    return std::make_unique<VasculatureColorHandler>(model, config, _population.name());
 }

@@ -500,4 +500,74 @@ struct CircuitThickness : public brayns::Message
     MESSAGE_ENTRY(double, radiusMultiplier, "The facto by which to multiply the geometry radiuses")
 };
 
+struct RequestColorCircuitById : public brayns::Message
+{
+    MESSAGE_BEGIN(RequestColorCircuitById)
+    MESSAGE_ENTRY(uint64_t, modelId, "The model to color")
+    MESSAGE_ENTRY(std::vector<std::string>, ids, "Ids to color. If empty, the whole circuit will "
+                                                 "be colored. Otherwise, only the specified IDs "
+                                                 "will be colored. Each entry in the 'ids' list "
+                                                 "must contain a counterpart on the 'colors' "
+                                                 "list. Ids can be a single number or a range "
+                                                 "in the form {start id}-{end id}")
+    MESSAGE_ENTRY(std::vector<double>, colors, "The list of colors to use. If 'ids' is empty, "
+                                               "'colors' is ignored. Otherwise, there must be "
+                                               "an entry on this list for each entry on the "
+                                               "'ids' list. Each entry is composed of 3 floating "
+                                               "point numbers, representing the RGB color")
+};
+
+struct RequestColorCircuitBySingleColor : public brayns::Message
+{
+    MESSAGE_BEGIN(RequestColorCircuitBySingleColor)
+    MESSAGE_ENTRY(uint64_t, modelId, "The model to color")
+    MESSAGE_ENTRY(std::vector<double>, color, "The color to apply to the whole circuit. It must "
+                                              "be composed of 3 decimal components representing "
+                                              "RGB values")
+};
+
+struct CircuitColorMethods : public brayns::Message
+{
+    MESSAGE_BEGIN(CircuitColorMethods)
+    MESSAGE_ENTRY(std::vector<std::string>, methods, "Available extra coloring method for a model")
+};
+
+struct RequestCircuitColorMethodVariables : public brayns::Message
+{
+    MESSAGE_BEGIN(RequestCircuitColorMethodVariables)
+    MESSAGE_ENTRY(uint64_t, modelId, "The ID of the model")
+    MESSAGE_ENTRY(std::string, method, "The method to query for variables")
+};
+
+struct CircuitColorMethodVariables : public brayns::Message
+{
+    MESSAGE_BEGIN(CircuitColorMethodVariables)
+    MESSAGE_ENTRY(std::vector<std::string>, variables, "List of possible variables that can be "
+                                                       "specified paired with a color when "
+                                                       "requesting a circuit to be colored by "
+                                                       "the requested method")
+};
+
+struct RequestColorCircuitByMethod : public brayns::Message
+{
+    MESSAGE_BEGIN(RequestColorCircuitByMethod)
+    MESSAGE_ENTRY(uint64_t, modelId, "The ID of the model")
+    MESSAGE_ENTRY(std::string, method, "The coloring method")
+    MESSAGE_ENTRY(std::vector<std::string>, variables, "List used to indicate which variables "
+                                                       "from the requested method to color. If "
+                                                       "empty, the whole circuit will be colored "
+                                                       "by the given method with random colors. "
+                                                       "Otherwise, only the elements affected by "
+                                                       "the specified variables will be altered. "
+                                                       "For each entry in this list, a color must "
+                                                       "be specified in the 'colors' list")
+    MESSAGE_ENTRY(std::vector<double>, colors, "List of colors that is paired with the "
+                                               "'variables' list. Each color is composed of 3 "
+                                               "decimal numbers which represent a RGB color. "
+                                               "There must be 1 color (3 numbers) for each "
+                                               "entry in the 'variables' list. If the 'variables' "
+                                               "list is empty, the 'colors' list is ignored")
+};
+
+
 #endif // CIRCUITEXLORERPARAMS_H

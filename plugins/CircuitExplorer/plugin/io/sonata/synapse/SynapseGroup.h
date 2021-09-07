@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <plugin/api/CircuitColorHandler.h>
 #include <plugin/io/sonata/morphology/MorphologyInstance.h>
 
 #include <brayns/engine/Model.h>
@@ -29,5 +30,5 @@ class SynapseGroup
 public:
     virtual void mapToCell(const MorphologyInstance&) = 0;
     virtual void mapSimulation(const std::unordered_map<uint64_t, uint64_t>&) = 0;
-    virtual void addToModel(brayns::Model& model) const = 0;
+    virtual ElementMaterialMap::Ptr addToModel(brayns::Model& model) const = 0;
 };

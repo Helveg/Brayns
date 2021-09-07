@@ -341,7 +341,7 @@ void CircuitExplorerPlugin::init()
                                           SonataNGVLoader::getCLIProperties(),
                                           this));
 
-    registry.registerLoader(std::make_unique<SonataLoader>(scene));
+    registry.registerLoader(std::make_unique<SonataLoader>(scene, _colorManager));
 
     auto actionInterface = _api->getActionInterface();
     if (actionInterface)
@@ -604,6 +604,56 @@ void CircuitExplorerPlugin::init()
              "CircuitThickness", "Model ID and radius multiplier to apply"},
             [&](const CircuitThickness& cc) {
                 return _changeCircuitThickness(cc);
+            });
+
+        actionInterface->registerRequest<RequestColorCircuitById, brayns::Message>(
+            {"set-circuit-color-by-id",
+             "Sets the color of a circuit by applying colors on a per element id basis. An "
+             "optional list of ids and/or id ranges can be specified to target specific "
+             "elements",
+             "RequestColorCircuitById", "Information to identify the circuit and, optionally, "
+             "target specifi elements by id"},
+            [&](const RequestColorCircuitById& payload) {
+                return _colorCircuitById(payload);
+            });
+
+        actionInterface->registerRequest<RequestColorCircuitBySingleColor, brayns::Message>(
+            {"set-circuit-color-by-single-color",
+             "Sets the color of all elements of a given circuit to a common color",
+             "RequestColorCircuitBySingleColor", "Information to identify the circuit and the "
+             "color to apply"},
+            [&](const RequestColorCircuitBySingleColor& payload) {
+                return _colorCircuitBySingleColor(payload);
+            });
+
+        actionInterface->registerRequest<ModelId, CircuitColorMethods>(
+            {"get-circuit-color-methods",
+             "Return a list of possible color methods to use on a given circuit (Besides "
+             "coloring by id or by a single color)",
+             "ModelId", "The ID of the model to query"},
+            [&](const ModelId& payload) {
+                return _requestCircuitColorMethods(payload);
+            });
+
+        actionInterface->registerRequest<RequestCircuitColorMethodVariables, CircuitColorMethodVariables>(
+            {"get-circuit-color-method-variables",
+             "Return a list of possible configurable variables for a given coloring method and "
+             "circuit that allows to target specific elements when coloring a circuit",
+             "RequestCircuitColorMethodVariables", "Information to identify the circuit and "
+             "method to query"},
+            [&](const RequestCircuitColorMethodVariables& payload) {
+                return _requestCircuitColorMethodVariables(payload);
+            });
+
+        actionInterface->registerRequest<RequestColorCircuitByMethod, brayns::Message>(
+            {"set-circuit-color-by-method",
+             "Sets the color of a circuit based on the value of each element given the "
+             "specified coloring method. An optional list of variables and colors may be "
+             "specified to target specific values",
+             "RequestColorCircuitByMethod", "Information to identify the circuit and "
+             "specify the method. Optionally specify target values of the given method"},
+            [&](const RequestColorCircuitByMethod& payload){
+                return _colorCircuitByMethod(payload);
             });
 
     } // if (actionInterface)
@@ -2786,6 +2836,128 @@ brayns::Message CircuitExplorerPlugin::_changeCircuitThickness(
     modelPtr->markModified();
     _api->getScene().markModified();
     _api->getEngine().triggerRender();
+
+    return result;
+}
+
+brayns::Message CircuitExplorerPlugin::_colorCircuitById(const RequestColorCircuitById& payload)
+{
+    brayns::Message result;
+
+    if(!payload.ids.empty() && payload.ids.size() != payload.colors.size() / 3)
+    {
+        result.setError(1, "There must be a color specified for each entry in the 'ids' list");
+        return result;
+    }
+
+    std::unordered_map<std::string, brayns::Vector3f> colorMap;
+    for(size_t i = 0; i < payload.ids.size(); ++i)
+    {
+        const auto colorIdx = i * 3;
+        colorMap[payload.ids[i]] = brayns::Vector3f(payload.colors[colorIdx],
+                                                    payload.colors[colorIdx + 1],
+                                                    payload.colors[colorIdx + 2]);
+    }
+
+    try
+    {
+        _colorManager.updateColorsById(payload.modelId, colorMap);
+        _api->getScene().markModified();
+        _api->triggerRender();
+    }
+    catch(const std::exception& e)
+    {
+        result.setError(2, e.what());
+    }
+
+    return result;
+}
+
+brayns::Message CircuitExplorerPlugin::_colorCircuitBySingleColor(
+        const RequestColorCircuitBySingleColor& payload)
+{
+    brayns::Message result;
+    if(payload.color.size() < 3)
+    {
+        result.setError(1, "'color' must contain 3 decimal RGB values");
+        return result;
+    }
+
+    try
+    {
+        _colorManager.updateSingleColor(payload.modelId, brayns::Vector3f(payload.color[0],
+                                                                          payload.color[1],
+                                                                          payload.color[2]));
+        _api->getScene().markModified();
+        _api->triggerRender();
+    }
+    catch(const std::exception& e)
+    {
+        result.setError(2, e.what());
+    }
+
+    return result;
+}
+
+CircuitColorMethods CircuitExplorerPlugin::_requestCircuitColorMethods(const ModelId& payload)
+{
+    CircuitColorMethods result;
+    try
+    {
+        result.methods = _colorManager.getAvailableMethods(payload.modelId);
+    }
+    catch(const std::exception& e)
+    {
+        result.setError(1, e.what());
+    }
+    return result;
+}
+
+CircuitColorMethodVariables CircuitExplorerPlugin::_requestCircuitColorMethodVariables(
+        const RequestCircuitColorMethodVariables& payload)
+{
+    CircuitColorMethodVariables result;
+    try
+    {
+        result.variables = _colorManager.getMethodVariables(payload.modelId, payload.method);
+    }
+    catch(const std::exception& e)
+    {
+        result.setError(1, e.what());
+    }
+    return result;
+}
+
+brayns::Message CircuitExplorerPlugin::_colorCircuitByMethod(
+        const RequestColorCircuitByMethod& payload)
+{
+    brayns::Message result;
+
+    if(!payload.variables.empty() && payload.variables.size() != payload.colors.size() / 3)
+    {
+        result.setError(1, "There must be a color specified for each entry in 'variables' list");
+        return result;
+    }
+
+    std::unordered_map<std::string, brayns::Vector3f> colorMap;
+    for(size_t i = 0; i < payload.variables.size(); ++i)
+    {
+        const auto colorIdx = i * 3;
+        colorMap[payload.variables[i]] = brayns::Vector3f(payload.colors[colorIdx],
+                                                          payload.colors[colorIdx + 1],
+                                                          payload.colors[colorIdx + 2]);
+    }
+
+    try
+    {
+        _colorManager.updateColors(payload.modelId, payload.method, colorMap);
+        _api->getScene().markModified();
+        _api->triggerRender();
+    }
+    catch(const std::exception& e)
+    {
+        result.setError(2, e.what());
+    }
 
     return result;
 }

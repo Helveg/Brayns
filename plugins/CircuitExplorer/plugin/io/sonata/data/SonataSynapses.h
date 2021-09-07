@@ -60,11 +60,11 @@ public:
                                                    const Selection& selection);
 
     static
-    std::vector<int32_t> getAfferentAstrocyteSectionIds(const Edges& population,
+    std::vector<int32_t> getEfferentAstrocyteSectionIds(const Edges& population,
                                                         const Selection& selection);
 
     static
-    std::vector<float> getAfferentAstrocyteSectionDistances(const Edges& population,
+    std::vector<float> getEfferentAstrocyteSectionDistances(const Edges& population,
                                                             const Selection& selection);
 
     static std::vector<brayns::Vector3f>

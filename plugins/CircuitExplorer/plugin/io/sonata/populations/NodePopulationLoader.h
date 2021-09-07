@@ -23,6 +23,7 @@
 
 #include <bbp/sonata/config.h>
 
+#include <plugin/api/CircuitColorHandler.h>
 #include <plugin/io/sonata/SonataLoaderProperties.h>
 #include <plugin/io/sonata/morphology/MorphologyInstance.h>
 
@@ -43,6 +44,9 @@ public:
     load(const PopulationLoadConfig& loadSettings,
          const bbp::sonata::Selection& nodeSelection,
          const brayns::LoaderProgress& updateCb) const = 0;
+
+    virtual std::unique_ptr<CircuitColorHandler>
+    createColorHandler(brayns::ModelDescriptor*, const std::string& configPath) const noexcept = 0;
 
 protected:
     bbp::sonata::NodePopulation _population;

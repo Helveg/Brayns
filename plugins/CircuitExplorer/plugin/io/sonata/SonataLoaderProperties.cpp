@@ -96,12 +96,12 @@ void checkEdges(const bbp::sonata::CircuitConfig& config,
                                             "'efferent'");
 
             const auto edgePopulation = config.getEdgePopulation(name);
-            if(afferent && edgePopulation.source() != nodePops[i])
+            if(efferent && edgePopulation.source() != nodePops[i])
                 throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
                                             "population '" + name + "' does not have node "
                                             "population '" + nodePops[i] + "' "
                                             "as source node populations");
-            else if(efferent && edgePopulation.target() != nodePops[i])
+            else if(afferent && edgePopulation.target() != nodePops[i])
                 throw std::invalid_argument("Node population '" + nodePops[i] + "': Edge "
                                             "population '" + name + "' does not have node "
                                             "population '" + nodePops[i] + "' "
@@ -355,6 +355,9 @@ void checkParameters(const bbp::sonata::CircuitConfig& config,
     checkVasculature(props, numNodePopulations);
 }
 
+/**
+ * Utilities to convert string into different types
+ */
 template<typename T>
 T convert(const std::string& src)
 {
@@ -414,6 +417,48 @@ std::vector<T> parseFlatStringList(const string_list& list)
             result[i] = convert<T>(list[i]);
     }
     return result;
+}
+
+/**
+ * @brief synapse_astrocyte edge populations connect a single astorcyte edge population
+ *        to one or more edge population of the target neuronal node population. Because
+ *        the design is to have a single node or edge population per model, we must check
+ *        the requests to load such type of edge populations and populate the neuronal node
+ *        populations with the appropiate edge populations. Otherwise, we would need to support
+ *        multiple populations per model.
+ */
+void processAstrocyteSynapseEdges(const bbp::sonata::CircuitConfig& config,
+                                  std::vector<PopulationLoadConfig>& loadConfigs)
+{
+    for(auto& lc : loadConfigs)
+    {
+        const auto props = config.getNodePopulationProperties(lc.node.name);
+        if(props.type != "biophysical")
+            continue;
+
+        auto edgeIt = lc.edges.begin();
+        std::vector<EdgeLoadConfig> newEdges;
+        while(edgeIt != lc.edges.end())
+        {
+            const auto edgeProps = config.getEdgePopulationProperties((*edgeIt).name);
+            if(edgeProps.type == "synapse_astrocyte")
+            {
+                const auto edges = config.getEdgePopulation((*edgeIt).name);
+                const auto neuronEdges = edges.getAttribute<std::string>("synapse_population",
+                                                                         edges.selectAll());
+                const std::unordered_set<std::string> uniqueNeuronEdges (neuronEdges.begin(),
+                                                                         neuronEdges.end());
+                for(const auto& neuronEdge : uniqueNeuronEdges)
+                    newEdges.push_back({neuronEdge, true, (*edgeIt).percentage, (*edgeIt).report});
+
+                lc.edges.erase(edgeIt);
+            }
+            else
+                ++edgeIt;
+        }
+
+        lc.edges.insert(lc.edges.end(), newEdges.begin(), newEdges.end());
+    }
 }
 
 } // namespace
@@ -482,25 +527,39 @@ SonataLoaderProperties::SonataLoaderProperties(const std::string& path,
     {
         auto& pls = _nodePopulations[i];
         pls.configPath = path;
-        pls.name = populationList[i];
-        pls.nodeIds = nodeIds[i];
-        pls.nodeSets = nodeSets[i];
-        pls.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
-        pls.simulationType = static_cast<SimulationType>(simTypes[i]);
-        pls.simulationPath = simPaths[i];
-        pls.edgePopulations = edgePopulations[i];
-        pls.edgePercentages = edgePercentages[i];
-        pls.edgeLoadModes = edgeLoadModes[i];
-        pls.edgeReports = edgeSims[i];
-        pls.radiusMultiplier = morphologyRadiusMult[i];
-        pls.neuronMode = morphologyLoadMode[i];
+        pls.node.name = populationList[i];
+        pls.node.ids = nodeIds[i];
+        pls.node.nodeSets = nodeSets[i];
+        pls.node.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
+        pls.node.simulationType = static_cast<SimulationType>(simTypes[i]);
+        pls.node.simulationPath = simPaths[i];
+
+        if(!edgePopulations.empty())
+        {
+            pls.edges.resize(edgePopulations[i].size());
+            for(size_t j = 0; j < edgePopulations[i].size(); ++j)
+            {
+                pls.edges[j].name = edgePopulations[i][j];
+                pls.edges[j].percentage = edgePercentages[i][j];
+                pls.edges[j].afferent = edgeLoadModes[i][j] == "afferent";
+                if(!edgeSims[i].empty())
+                    pls.edges[j].report = edgeSims[i][j];
+            }
+        }
+
+        pls.neurons.radiusMultiplier = morphologyRadiusMult[i];
+        pls.vasculature.radiusMultiplier = morphologyRadiusMult[i];
+
+        pls.neurons.mode = morphologyLoadMode[i];
 
         for(const auto morphologyPart : morphologySections[i])
-            pls.neuronSections.insert(static_cast<NeuronSection>(morphologyPart));
+            pls.neurons.sections.insert(static_cast<NeuronSection>(morphologyPart));
 
         for(const auto vasculaturePart : vasculatureSections[i])
-            pls.vasculatureSections.insert(static_cast<VasculatureSection>(vasculaturePart));
+            pls.vasculature.sections.insert(static_cast<VasculatureSection>(vasculaturePart));
     }
+
+    processAstrocyteSynapseEdges(config, _nodePopulations);
 }
 
 brayns::PropertyMap SonataLoaderProperties::getPropertyList() noexcept

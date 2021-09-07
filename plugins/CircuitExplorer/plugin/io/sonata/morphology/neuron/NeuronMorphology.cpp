@@ -132,15 +132,14 @@ std::vector<NeuronMorphology::Section> readNeurites(const morphio::Morphology& m
 
 // ------------------------------------------------------------------------------------------------
 
-NeuronMorphology::NeuronMorphology(const std::string& path,
-                                   const std::unordered_set<NeuronSection>& sections)
+NeuronMorphology::NeuronMorphology(const std::string& path, const std::set<NeuronSection>& section)
  : _morphologyPath(path)
  , _soma(nullptr)
 {
-    const bool loadSoma = sections.find(NeuronSection::SOMA) != sections.end();
-    const bool loadAxon = sections.find(NeuronSection::AXON) != sections.end();
-    const bool loadDend = sections.find(NeuronSection::DENDRITE) != sections.end();
-    const bool loadADen = sections.find(NeuronSection::APICAL_DENDRITE) != sections.end();
+    const bool loadSoma = section.find(NeuronSection::SOMA) != section.end();
+    const bool loadAxon = section.find(NeuronSection::AXON) != section.end();
+    const bool loadDend = section.find(NeuronSection::DENDRITE) != section.end();
+    const bool loadADen = section.find(NeuronSection::APICAL_DENDRITE) != section.end();
 
     const auto morph = readMorphology(path);
 

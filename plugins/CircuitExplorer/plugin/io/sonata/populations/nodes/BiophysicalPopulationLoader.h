@@ -20,10 +20,10 @@
 
 #include "../NodePopulationLoader.h"
 
-class BiophysicalPopualtionLoader : public NodePopulationLoader
+class BiophysicalPopulationLoader : public NodePopulationLoader
 {
 public:
-    BiophysicalPopualtionLoader(bbp::sonata::NodePopulation&& population,
+    BiophysicalPopulationLoader(bbp::sonata::NodePopulation&& population,
                                 bbp::sonata::PopulationProperties&& properties)
      : NodePopulationLoader(std::move(population), std::move(properties))
     {
@@ -33,4 +33,7 @@ public:
     load(const PopulationLoadConfig& loadSettings,
           const bbp::sonata::Selection& nodeSelection,
           const brayns::LoaderProgress& updateCb) const final;
+
+    std::unique_ptr<CircuitColorHandler>
+    createColorHandler(brayns::ModelDescriptor*, const std::string& config) const noexcept final;
 };

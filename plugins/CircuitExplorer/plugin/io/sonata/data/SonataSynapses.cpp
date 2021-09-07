@@ -158,7 +158,7 @@ std::vector<float> SonataSynapses::getEfferentSectionDistances(const Edges& popu
     return population.getAttribute<float>(attribEffSegmentPos, selection);
 }
 
-std::vector<int32_t> SonataSynapses::getAfferentAstrocyteSectionIds(const Edges& population,
+std::vector<int32_t> SonataSynapses::getEfferentAstrocyteSectionIds(const Edges& population,
                                                                     const Selection& selection)
 {
     checkEdgeParameters(population, {attribAstroSectionId});
@@ -167,7 +167,7 @@ std::vector<int32_t> SonataSynapses::getAfferentAstrocyteSectionIds(const Edges&
     return sectionIds;
 }
 
-std::vector<float> SonataSynapses::getAfferentAstrocyteSectionDistances(const Edges& population,
+std::vector<float> SonataSynapses::getEfferentAstrocyteSectionDistances(const Edges& population,
                                                                         const Selection& selection)
 {
     checkEdgeParameters(population, {attribAstroSectionPos});

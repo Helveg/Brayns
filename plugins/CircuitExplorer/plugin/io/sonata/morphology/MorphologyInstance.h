@@ -44,7 +44,7 @@ public:
                                const std::vector<uint16_t>& sectionOffsets,
                                const std::vector<uint16_t>& sectionCompartments) = 0;
 
-    virtual void addToModel(brayns::Model& model) const = 0;
+    virtual ElementMaterialMap::Ptr addToModel(brayns::Model& model) const = 0;
 
     virtual size_t
     getSectionSegmentCount(const int32_t section) const = 0;

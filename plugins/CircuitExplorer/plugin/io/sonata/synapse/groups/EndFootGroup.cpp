@@ -18,6 +18,8 @@
 
 #include "EndFootGroup.h"
 
+#include <plugin/io/sonata/populations/edges/colorhandlers/EndFootColorHandler.h>
+
 void EndFootGroup::addSynapse(const uint64_t id,
                               brayns::TriangleMesh&& endFootMesh)
 {
@@ -34,12 +36,16 @@ void EndFootGroup::mapSimulation(const std::unordered_map<uint64_t, uint64_t>&)
     // mesh simulation not supported yet
 }
 
-void EndFootGroup::addToModel(brayns::Model& model) const
+ElementMaterialMap::Ptr EndFootGroup::addToModel(brayns::Model& model) const
 {
+    auto result = std::make_unique<EndFootMaterialMap>();
+    result->materials.reserve(_meshes.size());
     for(auto& mesh : _meshes)
     {
         const auto matId = model.getMaterials().size();
         model.createMaterial(matId, "");
         model.getTriangleMeshes()[matId] = std::move(mesh);
+        result->materials.push_back(matId);
     }
+    return result;
 }

@@ -19,14 +19,14 @@
 #include "CommonEdgePopulationLoader.h"
 
 #include <plugin/io/sonata/data/SonataSynapses.h>
+#include <plugin/io/sonata/populations/edges/colorhandlers/CommonEdgeColorHandler.h>
 #include <plugin/io/sonata/synapse/groups/SurfaceSynapseGroup.h>
 
 #include <common/log.h>
 
 std::vector<std::unique_ptr<SynapseGroup>>
 CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
-                                 const bbp::sonata::Selection& nodeSelection,
-                                 const bool afferent) const
+                                 const bbp::sonata::Selection& nodeSelection) const
 {
     const auto baseNodeList = nodeSelection.flatten();
 
@@ -42,9 +42,9 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
     std::vector<brayns::Vector3f> surfacePos;
     std::vector<uint64_t> edgeIds;
 
-    if(afferent)
+    if(_afferent)
     {
-        const auto edgeSelection = _population.afferentEdges(baseNodeList);
+        const auto edgeSelection = _applyPercentage(_population.afferentEdges(baseNodeList));
         edgeIds = edgeSelection.flatten();
         srcNodes = SonataSynapses::getTargetNodes(_population, edgeSelection);
         sectionIds = SonataSynapses::getAfferentSectionIds(_population, edgeSelection);
@@ -53,7 +53,7 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
     }
     else
     {
-        const auto edgeSelection = _population.efferentEdges(baseNodeList);
+        const auto edgeSelection = _applyPercentage(_population.efferentEdges(baseNodeList));
         edgeIds = edgeSelection.flatten();
         srcNodes = SonataSynapses::getSourceNodes(_population, edgeSelection);
         surfacePos = SonataSynapses::getEfferentSurfacePos(_population, edgeSelection);
@@ -83,4 +83,11 @@ CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
     }
 
     return synapses;
+}
+
+std::unique_ptr<CircuitColorHandler>
+CommonEdgePopulationLoader::createColorHandler(brayns::ModelDescriptor *model,
+                                               const std::string& config) const noexcept
+{
+    return std::make_unique<CommonEdgeColorHandler>(model, config, _population.name(), _afferent);
 }

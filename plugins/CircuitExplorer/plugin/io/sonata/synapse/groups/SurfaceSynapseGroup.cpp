@@ -18,6 +18,8 @@
 
 #include "SurfaceSynapseGroup.h"
 
+#include <plugin/io/sonata/populations/edges/colorhandlers/CommonEdgeColorHandler.h>
+
 #define USE_DISTANCE_METHOD
 
 void SurfaceSynapseGroup::addSynapse(const uint64_t id,
@@ -111,12 +113,16 @@ void SurfaceSynapseGroup::mapSimulation(const std::unordered_map<uint64_t, uint6
     }
 }
 
-void SurfaceSynapseGroup::addToModel(brayns::Model& model) const
+ElementMaterialMap::Ptr SurfaceSynapseGroup::addToModel(brayns::Model& model) const
 {
+    auto result = std::make_unique<SurfaceEdgeMaterialMap>();
+    result->materials.reserve(_addedSynapses.size());
     for(size_t i = 0; i < _addedSynapses.size(); ++i)
     {
         const auto matId = model.getMaterials().size();
         model.createMaterial(matId, "");
         model.addSDFGeometry(matId, _geometry[_addedSynapses[i]], {});
+        result->materials.push_back({_ids[_addedSynapses[i]], matId});
     }
+    return result;
 }

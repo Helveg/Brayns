@@ -27,13 +27,16 @@ class SynapseAstrocytePopulationLoader: public EdgePopulationLoader
 public:
     SynapseAstrocytePopulationLoader(const bbp::sonata::CircuitConfig& config,
                                      const std::string& population,
-                                     const float percentage)
-     : EdgePopulationLoader(config, population, percentage)
+                                     const float percentage,
+                                     const bool afferent)
+     : EdgePopulationLoader(config, population, percentage, afferent)
     {
     }
 
     std::vector<std::unique_ptr<SynapseGroup>>
     load(const PopulationLoadConfig& loadConfig,
-         const bbp::sonata::Selection& nodeSelection,
-         const bool afferent) const final;
+         const bbp::sonata::Selection& nodeSelection) const final;
+
+    std::unique_ptr<CircuitColorHandler>
+    createColorHandler(brayns::ModelDescriptor*, const std::string& config) const noexcept final;
 };
