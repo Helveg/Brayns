@@ -32,10 +32,16 @@ namespace brayns
 class AbstractSimulationHandler
 {
 public:
+    AbstractSimulationHandler() = default;
+    AbstractSimulationHandler(const AbstractSimulationHandler& o)
+    {
+        *this = o;
+    }
+
     /** @return a clone of the concrete simulation handler implementation. */
     virtual AbstractSimulationHandlerPtr clone() const = 0;
 
-    virtual ~AbstractSimulationHandler();
+    virtual ~AbstractSimulationHandler() = default;
 
     AbstractSimulationHandler& operator=(const AbstractSimulationHandler& rhs);
 

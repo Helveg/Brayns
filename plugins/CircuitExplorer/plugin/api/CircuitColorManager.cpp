@@ -55,6 +55,17 @@ void CircuitColorManager::unregisterHandler(const size_t modelId)
     }
 }
 
+bool CircuitColorManager::handlerExists(const size_t modelId) const noexcept
+{
+    for(const auto& handler : _handlers)
+    {
+        if(handler->getModelID() == modelId)
+            return true;
+    }
+
+    return false;
+}
+
 const std::vector<std::string>&
 CircuitColorManager::getAvailableMethods(const uint64_t modelId) const
 {
@@ -74,7 +85,14 @@ CircuitColorManager::updateColorsById(const uint64_t modelId, const ColorVariabl
 }
 
 void
-CircuitColorManager::updateSingleColor(const uint64_t modelId, const brayns::Vector3f& color)
+CircuitColorManager::updateColorsById(const uint64_t modelId,
+                                      const std::map<uint64_t, brayns::Vector4f>& colorMap)
+{
+    getHandler(modelId, _handlers)->updateColorById(colorMap);
+}
+
+void
+CircuitColorManager::updateSingleColor(const uint64_t modelId, const brayns::Vector4f& color)
 {
     getHandler(modelId, _handlers)->updateSingleColor(color);
 }

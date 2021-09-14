@@ -1,10 +1,7 @@
-/* Copyright (c) 2018-2019, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
  * Responsible Authors: Cyrille Favreau <cyrille.favreau@epfl.ch>
  *                      Nadir Román Guerrero <nadir.romanguerrero@epfl.ch>
- *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -20,10 +17,7 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef CIRCUITEXPLORERPARAMS_H
-#define CIRCUITEXPLORERPARAMS_H
-
-#include "../../common/types.h"
+#pragma once
 
 #include <brayns/common/ActionMessage.h>
 #include <brayns/common/types.h>
@@ -171,40 +165,10 @@ struct MaterialIds : public brayns::Message
     MESSAGE_ENTRY(std::vector<uint64_t>, ids, "The list of material ids")
 };
 
-struct SynapseAttributes : public brayns::Message
-{
-    MESSAGE_BEGIN(SynapseAttributes)
-    MESSAGE_ENTRY(std::string, circuitConfiguration, "Path to the circuit configuration file")
-    MESSAGE_ENTRY(int32_t, gid, "Target cell GID")
-    MESSAGE_ENTRY(std::vector<std::string>, htmlColors, "List of rgb colors in hexadecimal")
-    MESSAGE_ENTRY(double, lightEmission, "Emission parameter for the synapse material")
-    MESSAGE_ENTRY(double, radius, "Synapse geometry radius")
-};
-
 struct CircuitBoundingBox : public brayns::Message
 {
     MESSAGE_BEGIN(CircuitBoundingBox)
     MESSAGE_ENTRY(std::vector<double>, aabb, "The bounding box definition")
-};
-
-struct ConnectionsPerValue : public brayns::Message
-{
-    MESSAGE_BEGIN(ConnectionsPerValue)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to which apply the connections per value setting")
-    MESSAGE_ENTRY(uint32_t, frame, "The frame of the simulation in which to apply")
-    MESSAGE_ENTRY(double, value, "The value")
-    MESSAGE_ENTRY(double, epsilon, "The value epsilon")
-};
-
-struct MetaballsFromSimulationValue : public brayns::Message
-{
-    MESSAGE_BEGIN(MetaballsFromSimulationValue)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to which apply the metaballs setting")
-    MESSAGE_ENTRY(uint32_t, frame, "The frame in which the setting will be applied")
-    MESSAGE_ENTRY(double, value, "The value for the metaballs generation")
-    MESSAGE_ENTRY(double, epsilon, "The value epsilon")
-    MESSAGE_ENTRY(uint32_t, gridSize, "The size of a regular grid")
-    MESSAGE_ENTRY(double, threshold, "The threshold")
 };
 
 struct MaterialExtraAttributes : public brayns::Message
@@ -212,80 +176,6 @@ struct MaterialExtraAttributes : public brayns::Message
     MESSAGE_BEGIN(MaterialExtraAttributes)
     MESSAGE_ENTRY(uint32_t, modelId,
                   "The model from which the materials will have the extra attributes setted")
-};
-
-struct LoadCellsAsInstances : public brayns::Message
-{
-    MESSAGE_BEGIN(LoadCellsAsInstances)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, sqlStatement, "The sql statement to query the database")
-    MESSAGE_ENTRY(std::string, name, "The name")
-    MESSAGE_ENTRY(std::string, description, "The description")
-    MESSAGE_ENTRY(std::string, morphologyFolder, "The folder in which to find the morphologies")
-    MESSAGE_ENTRY(std::string, morphologyExtension, "The morphology file format extension")
-};
-
-struct ImportMorphology : public brayns::Message
-{
-    MESSAGE_BEGIN(ImportMorphology)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database");
-    MESSAGE_ENTRY(uint64_t, guid, "The global unique identifier")
-    MESSAGE_ENTRY(std::string, fileName, "The path to the file of the morphology")
-};
-
-struct LoadCells : public brayns::Message
-{
-    MESSAGE_BEGIN(LoadCells)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, name, "The name")
-    MESSAGE_ENTRY(std::string, sqlCell, "The sql statement to query the cells")
-    MESSAGE_ENTRY(std::string, sqlMorphology, "The sql statement to query the morphologies")
-    MESSAGE_ENTRY(bool, sdf, "Wether to use signed distance field functions to render the cells")
-};
-
-struct LoadSomas : public brayns::Message
-{
-    MESSAGE_BEGIN(LoadSomas)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, sqlStatement, "The sql statement to query the database")
-    MESSAGE_ENTRY(std::string, name, "The name")
-    MESSAGE_ENTRY(double, radius, "The radius to apply to soma rendering")
-    MESSAGE_ENTRY(bool, showOrientations, "Wether to render proxies to show the orientation")
-};
-
-struct LoadSegments : public brayns::Message
-{
-    MESSAGE_BEGIN(LoadSegments)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, sqlStatement, "The sql statement to query the database")
-    MESSAGE_ENTRY(std::string, name, "The name")
-    MESSAGE_ENTRY(double, radius, "The radius to apply to the segments rendering")
-};
-
-struct LoadMeshes : public brayns::Message
-{
-    MESSAGE_BEGIN(LoadMeshes)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, sqlStatement, "The sql statement to query the database")
-};
-
-struct ImportVolume : public brayns::Message
-{
-    MESSAGE_BEGIN(ImportVolume)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(uint64_t, guid, "The global unique identifier")
-    MESSAGE_ENTRY(std::vector<uint32_t>, dimensions, "The volume dimensions")
-    MESSAGE_ENTRY(std::vector<float>, spacing, "The volume spacing")
-    MESSAGE_ENTRY(std::string, rawFilename, "The path to the volume file")
-};
-
-struct ImportCompartmentSimulation : public brayns::Message
-{
-    MESSAGE_BEGIN(ImportCompartmentSimulation)
-    MESSAGE_ENTRY(std::string, connectionString, "The sql statement to connect to the database")
-    MESSAGE_ENTRY(std::string, blueConfig,
-                  "The path to the Blue Brain configuration file with the report")
-    MESSAGE_ENTRY(std::string, reportName, "The name of the report to load")
 };
 
 struct CameraDefinition : public brayns::Message
@@ -300,23 +190,6 @@ struct CameraDefinition : public brayns::Message
     MESSAGE_ENTRY(double, apertureRadius, "The camera aperture")
     MESSAGE_ENTRY(double, focusDistance,
                   "The distance from the origin, in the direction, at which the camera will focus")
-};
-
-struct AttachCellGrowthHandler : public brayns::Message
-{
-    MESSAGE_BEGIN(AttachCellGrowthHandler)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to which to attach the handler")
-    MESSAGE_ENTRY(uint64_t, nbFrames, "The number of frames to perform the growth")
-};
-
-struct AttachCircuitSimulationHandler : public brayns::Message
-{
-    MESSAGE_BEGIN(AttachCircuitSimulationHandler)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to which to attach the handler")
-    MESSAGE_ENTRY(std::string, circuitConfiguration,
-                  "The path to the Blue Brain config file which contains the simulation")
-    MESSAGE_ENTRY(std::string, reportName, "The name of the report to attach")
-    MESSAGE_ENTRY(bool, synchronousMode, "Wether to perform the load synchronously (blocking)")
 };
 
 struct ExportFramesToDisk : public brayns::Message
@@ -399,9 +272,9 @@ struct AnterogradeTracing : public brayns::Message
 {
     MESSAGE_BEGIN(AnterogradeTracing)
     MESSAGE_ENTRY(uint64_t, modelId, "Model where to perform the neuronal tracing")
-    MESSAGE_ENTRY(std::vector<uint32_t>, cellGids, "List of cell GIDs to use a source of the "
+    MESSAGE_ENTRY(std::vector<uint64_t>, cellGids, "List of cell GIDs to use a source of the "
                                                    "tracing")
-    MESSAGE_ENTRY(std::vector<uint32_t>, targetCellGids, "List of cells GIDs which are the result"
+    MESSAGE_ENTRY(std::vector<uint64_t>, targetCellGids, "List of cells GIDs which are the result"
                                                          " of the given tracing mode")
     MESSAGE_ENTRY(std::vector<double>, sourceCellColor, "A 4 component normalized color (RGBA) to "
                                                         "apply to the source cell geometry")
@@ -461,31 +334,6 @@ struct AddShapeResult : public brayns::Message
     MESSAGE_ENTRY(uint64_t, id, "The id of the added model")
 };
 
-struct RemapCircuit : public brayns::Message
-{
-    MESSAGE_BEGIN(RemapCircuit)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to remap")
-    MESSAGE_ENTRY(std::string, scheme, "Color scheme to remap a circuit to (Possible values: "
-                                       "\"By id\", \"By layer\", \"By mtype\", \"By etype\", "
-                                       "\"By target\")")
-};
-
-struct RemapCircuitResult: public brayns::Message
-{
-    MESSAGE_BEGIN(RemapCircuitResult)
-    MESSAGE_ENTRY(bool, updated, "Wether the colors of the model changed because of the "
-                                 "remapping.")
-};
-
-struct ColorCells : public brayns::Message
-{
-    MESSAGE_BEGIN(ColorCells)
-    MESSAGE_ENTRY(uint64_t, modelId, "The model to which apply the coloring")
-    MESSAGE_ENTRY(std::vector<std::string>, gids, "List of cell GIDs to color")
-    MESSAGE_ENTRY(std::vector<double>, colors, "List of RGB colors, in the same order as "
-                                               "the GIDs were specified")
-};
-
 struct MirrorModel : public brayns::Message
 {
     MESSAGE_BEGIN(MirrorModel)
@@ -513,8 +361,8 @@ struct RequestColorCircuitById : public brayns::Message
     MESSAGE_ENTRY(std::vector<double>, colors, "The list of colors to use. If 'ids' is empty, "
                                                "'colors' is ignored. Otherwise, there must be "
                                                "an entry on this list for each entry on the "
-                                               "'ids' list. Each entry is composed of 3 floating "
-                                               "point numbers, representing the RGB color")
+                                               "'ids' list. Each entry is composed of 4 floating "
+                                               "point numbers, representing the RGBA color")
 };
 
 struct RequestColorCircuitBySingleColor : public brayns::Message
@@ -522,8 +370,8 @@ struct RequestColorCircuitBySingleColor : public brayns::Message
     MESSAGE_BEGIN(RequestColorCircuitBySingleColor)
     MESSAGE_ENTRY(uint64_t, modelId, "The model to color")
     MESSAGE_ENTRY(std::vector<double>, color, "The color to apply to the whole circuit. It must "
-                                              "be composed of 3 decimal components representing "
-                                              "RGB values")
+                                              "be composed of 4 decimal components representing "
+                                              "RGBA values")
 };
 
 struct CircuitColorMethods : public brayns::Message
@@ -563,11 +411,8 @@ struct RequestColorCircuitByMethod : public brayns::Message
                                                        "be specified in the 'colors' list")
     MESSAGE_ENTRY(std::vector<double>, colors, "List of colors that is paired with the "
                                                "'variables' list. Each color is composed of 3 "
-                                               "decimal numbers which represent a RGB color. "
-                                               "There must be 1 color (3 numbers) for each "
+                                               "decimal numbers which represent a RGBA color. "
+                                               "There must be 1 color (4 numbers) for each "
                                                "entry in the 'variables' list. If the 'variables' "
                                                "list is empty, the 'colors' list is ignored")
 };
-
-
-#endif // CIRCUITEXLORERPARAMS_H

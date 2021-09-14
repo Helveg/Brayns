@@ -21,8 +21,6 @@
 
 namespace brayns
 {
-AbstractSimulationHandler::~AbstractSimulationHandler() = default;
-
 AbstractSimulationHandler& AbstractSimulationHandler::operator=(
     const AbstractSimulationHandler& rhs)
 {

@@ -66,13 +66,14 @@ inline std::vector<uint64_t> parseIDRanges(const std::string& input)
 
 inline void updateMaterialImpl(brayns::ModelDescriptor* model,
                                const size_t id,
-                               const brayns::Vector3f& color)
+                               const brayns::Vector4f& color)
 {
     if(id == std::numeric_limits<size_t>::max())
         return;
 
     auto material = model->getModel().getMaterial(id);
-    material->setDiffuseColor(color);
+    material->setDiffuseColor(brayns::Vector3d(color.r, color.g, color.b));
+    material->setOpacity(static_cast<double>(color.a));
     material->markModified();
     material->commit();
 }
@@ -81,7 +82,7 @@ inline void updateMaterialImpl(brayns::ModelDescriptor* model,
 
 void ElementMaterialMap::_updateMaterial(brayns::ModelDescriptor* model,
                                          const size_t id,
-                                         const brayns::Vector3f& color) const
+                                         const brayns::Vector4f& color) const
 {
     ::updateMaterialImpl(model, id, color);
 }
@@ -97,8 +98,6 @@ void CircuitColorHandler::initialize()
 {
     _methods = _getMethodsImpl();
     _methodVariables.resize(_methods.size());
-    for(size_t i = 0; i < _methods.size(); ++i)
-        _methodVariables[i] = _getMethodVariablesImpl(_methods[i]);
 }
 
 void CircuitColorHandler::setElements(const std::vector<uint64_t>& ids,
@@ -118,7 +117,15 @@ CircuitColorHandler::getMethodVariables(const std::string& method) const
     for(size_t i = 0; i < _methods.size(); ++i)
     {
         if(method == _methods[i])
-            return _methodVariables[i];
+        {
+            auto& cache = _methodVariables[i];
+            if(!cache.initialized)
+            {
+                cache.variables = _getMethodVariablesImpl(_methods[i]);
+                cache.initialized = true;
+            }
+            return cache.variables;
+        }
     }
 
     throw std::invalid_argument("CircuitColorHandler: Unknown method '" + method
@@ -127,7 +134,7 @@ CircuitColorHandler::getMethodVariables(const std::string& method) const
 
 void CircuitColorHandler::updateColorById(const ColorVariables& variables)
 {
-    std::map<uint64_t, brayns::Vector3f> colorMap;
+    std::map<uint64_t, brayns::Vector4f> colorMap;
     if(!variables.empty())
     {
         for(const auto& entry : variables)
@@ -145,7 +152,13 @@ void CircuitColorHandler::updateColorById(const ColorVariables& variables)
     _model->markModified();
 }
 
-void CircuitColorHandler::updateSingleColor(const brayns::Vector3f& color)
+void CircuitColorHandler::updateColorById(const std::map<uint64_t, brayns::Vector4f>& colorMap)
+{
+    _updateColorByIdImpl(colorMap);
+    _model->markModified();
+}
+
+void CircuitColorHandler::updateSingleColor(const brayns::Vector4f& color)
 {
     _updateSingleColorImpl(color);
     _model->markModified();
@@ -167,7 +180,7 @@ size_t CircuitColorHandler::getModelID() const noexcept
     return _model->getModelID();
 }
 
-void CircuitColorHandler::_updateMaterial(const size_t id, const brayns::Vector3f& color)
+void CircuitColorHandler::_updateMaterial(const size_t id, const brayns::Vector4f& color)
 {
     ::updateMaterialImpl(_model, id, color);
 }

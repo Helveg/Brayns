@@ -24,7 +24,7 @@
 
 struct ColorTable
 {
-    std::vector<brayns::Vector3f> VALUES;
+    std::vector<brayns::Vector4f> VALUES;
 
     ColorTable();
 };
@@ -32,10 +32,10 @@ struct ColorTable
 class ColorDeck
 {
 public:
-    const brayns::Vector3f& getColorForKey(const std::string& k) noexcept;
+    const brayns::Vector4f& getColorForKey(const std::string& k) noexcept;
 
 private:
-    const brayns::Vector3f& emplaceColor(const std::string& k) noexcept;
+    const brayns::Vector4f& emplaceColor(const std::string& k) noexcept;
 
     static ColorTable _TABLE;
 
@@ -46,7 +46,7 @@ private:
 class ColorRoulette
 {
 public:
-    const brayns::Vector3f& getNextColor() noexcept;
+    const brayns::Vector4f& getNextColor() noexcept;
 
 private:
     static ColorTable _TABLE;

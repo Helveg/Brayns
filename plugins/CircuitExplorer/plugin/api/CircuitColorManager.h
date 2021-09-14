@@ -31,6 +31,7 @@ class CircuitColorManager
 public:
     void registerHandler(std::unique_ptr<CircuitColorHandler>&& handler);
     void unregisterHandler(const size_t modelId);
+    bool handlerExists(const size_t modelId) const noexcept;
 
     const std::vector<std::string>& getAvailableMethods(const uint64_t modelId) const;
 
@@ -38,8 +39,10 @@ public:
                                                        const std::string& method) const;
 
     void updateColorsById(const uint64_t modelId, const ColorVariables& variables);
+    void updateColorsById(const uint64_t modelId,
+                          const std::map<uint64_t, brayns::Vector4f>& colorMap);
 
-    void updateSingleColor(const uint64_t modelId, const brayns::Vector3f& color);
+    void updateSingleColor(const uint64_t modelId, const brayns::Vector4f& color);
 
     void updateColors(const uint64_t modelId, const std::string& method, const ColorVariables& vars);
 

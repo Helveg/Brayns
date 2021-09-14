@@ -20,29 +20,20 @@
  */
 
 #include "CircuitExplorerPlugin.h"
-#include <common/commonTypes.h>
-#include <common/log.h>
 
-#include <plugin/io/AdvancedCircuitLoader.h>
-#include <plugin/io/AstrocyteLoader.h>
-#include <plugin/io/BrickLoader.h>
-#include <plugin/io/CellGrowthHandler.h>
-#include <plugin/io/MeshCircuitLoader.h>
-#include <plugin/io/MorphologyCollageLoader.h>
-#include <plugin/io/MorphologyLoader.h>
-#include <plugin/io/PairSynapsesLoader.h>
-#include <plugin/io/sonata/SonataLoader.h>
-#include <plugin/io/sonata/SonataNGVLoader.h>
-#include <plugin/io/SynapseCircuitLoader.h>
-#include <plugin/io/SynapseJSONLoader.h>
-#include <plugin/io/VoltageSimulationHandler.h>
-#include <plugin/meshing/PointCloudMesher.h>
+#include <plugin/api/Log.h>
+#include <plugin/api/MaterialUtils.h>
+#include <plugin/io/BBPLoader.h>
+#include <plugin/io/NeuronMorphologyLoader.h>
+#include <plugin/io/SonataLoader.h>
+#include <plugin/io/SonataNGVLoader.h>
 #include <plugin/movie/MovieMaker.h>
 
 #include <brayns/common/ActionInterface.h>
 #include <brayns/common/Progress.h>
 #include <brayns/common/Timer.h>
 #include <brayns/common/geometry/Streamline.h>
+#include <brayns/common/simulation/AbstractSimulationHandler.h>
 #include <brayns/common/utils/base64/base64.h>
 #include <brayns/common/utils/imageUtils.h>
 #include <brayns/common/utils/stringUtils.h>
@@ -72,12 +63,11 @@
 
 #include <boost/filesystem.hpp>
 
-#define REGISTER_LOADER(LOADER, FUNC) \
-    registry.registerLoader({std::bind(&LOADER::getSupportedDataTypes), FUNC});
-
-const std::string ANTEROGRADE_TYPE_AFFERENT = "afferent";
-const std::string ANTEROGRADE_TYPE_AFFERENTEXTERNAL = "projection";
-const std::string ANTEROGRADE_TYPE_EFFERENT = "efferent";
+namespace
+{
+constexpr char ANTEROGRADE_TYPE_AFFERENT[] = "afferent";
+constexpr char ANTEROGRADE_TYPE_AFFERENTEXTERNAL[] = "projection";
+constexpr char ANTEROGRADE_TYPE_EFFERENT[] = "efferent";
 
 void _addAdvancedSimulationRenderer(brayns::Engine& engine)
 {
@@ -265,24 +255,34 @@ std::string _sanitizeString(const std::string& input)
             }
         }
         if (!found)
-        {
             result += std::string(1, input[i]);
-        }
     }
     return result;
 }
 
-std::vector<std::string> _splitString(const std::string& source,
-                                      const char token)
+size_t __createMaterial(brayns::Model& model, const brayns::Vector3d& color, const double opacity)
 {
-    std::vector<std::string> result;
-    std::string split;
-    std::istringstream ss(source);
-    while (std::getline(ss, split, token))
-        result.push_back(split);
+    const auto matId = model.getMaterials().size();
+    brayns::MaterialPtr mptr = model.createMaterial(matId, "");
+    mptr->setDiffuseColor(color);
+    mptr->setOpacity(opacity);
+    mptr->setSpecularExponent(20.0);
 
-    return result;
+    brayns::PropertyMap props;
+    props.setProperty({MATERIAL_PROPERTY_CAST_USER_DATA, false});
+    props.setProperty({MATERIAL_PROPERTY_SHADING_MODE,
+                       static_cast<int>(MaterialShadingMode::diffuse)});
+    props.setProperty({MATERIAL_PROPERTY_CLIPPING_MODE,
+                       static_cast<int>(MaterialClippingMode::no_clipping)});
+
+    mptr->updateProperties(props);
+
+    mptr->markModified();
+    mptr->commit();
+    return matId;
 }
+
+} // namespace
 
 CircuitExplorerPlugin::CircuitExplorerPlugin()
     : ExtensionPlugin()
@@ -300,48 +300,10 @@ void CircuitExplorerPlugin::init()
                                    .getRenderingParameters()
                                    .getMaxAccumFrames();
 
-    registry.registerLoader(
-        std::make_unique<BrickLoader>(scene, BrickLoader::getCLIProperties()));
-
-    registry.registerLoader(
-        std::make_unique<SynapseJSONLoader>(scene,
-                                            std::move(_synapseAttributes)));
-
-    registry.registerLoader(std::make_unique<SynapseCircuitLoader>(
-        scene, pm.getApplicationParameters(),
-        SynapseCircuitLoader::getCLIProperties(), this));
-
-    registry.registerLoader(std::make_unique<MorphologyLoader>(
-        scene, MorphologyLoader::getCLIProperties()));
-
-    registry.registerLoader(std::make_unique<AdvancedCircuitLoader>(
-        scene, pm.getApplicationParameters(),
-        AdvancedCircuitLoader::getCLIProperties(), this));
-
-    registry.registerLoader(std::make_unique<MorphologyCollageLoader>(
-        scene, pm.getApplicationParameters(),
-        MorphologyCollageLoader::getCLIProperties(), this));
-
-    registry.registerLoader(std::make_unique<MeshCircuitLoader>(
-        scene, pm.getApplicationParameters(),
-        MeshCircuitLoader::getCLIProperties(), this));
-
-    registry.registerLoader(std::make_unique<PairSynapsesLoader>(
-        scene, pm.getApplicationParameters(),
-        PairSynapsesLoader::getCLIProperties(), this));
-
-    registry.registerLoader(
-        std::make_unique<AstrocyteLoader>(scene, pm.getApplicationParameters(),
-                                          AstrocyteLoader::getCLIProperties(),
-                                          this));
-
-    registry.registerLoader(
-        std::make_unique<SonataNGVLoader>(scene,
-                                          pm.getApplicationParameters(),
-                                          SonataNGVLoader::getCLIProperties(),
-                                          this));
-
+    registry.registerLoader(std::make_unique<BBPLoader>(scene, _colorManager));
+    registry.registerLoader(std::make_unique<NeuronMorphologyLoader>(scene));
     registry.registerLoader(std::make_unique<SonataLoader>(scene, _colorManager));
+    registry.registerLoader(std::make_unique<SonataNGVLoader>(scene, _colorManager));
 
     auto actionInterface = _api->getActionInterface();
     if (actionInterface)
@@ -420,47 +382,6 @@ void CircuitExplorerPlugin::init()
                     return _setMaterialExtraAttributes(param);
                 });
 
-        actionInterface->registerRequest<SynapseAttributes, brayns::Message>(
-            {"set-synapses-attributes",
-             "Sets sypnapse specific attributes for a given model",
-             "SynapseAttributes", "The model and synapse attributes to modify"},
-            [&](const SynapseAttributes& param) {
-                return _setSynapseAttributes(param);
-            });
-
-        actionInterface->registerRequest<SaveModelToCache, brayns::Message>(
-            {"save-model-to-cache",
-             "Builds and saves a Brayns cache model from a given loaded model",
-             "SaveModelToCache",
-             "Model to be saved and parameters for the build of the cache "
-             "file"},
-            [&](const SaveModelToCache& param) {
-                return _saveModelToCache(param);
-            });
-
-        actionInterface->registerRequest<ConnectionsPerValue, brayns::Message>(
-            {"set-connections-per-value",
-             "Draws a point cloud representing the number of connections for a "
-             "given frame"
-             " and simulation value",
-             "ConnectionsPerValue",
-             "Model, frame, and value to build the point cloude"},
-            [&](const ConnectionsPerValue& param) {
-                return _setConnectionsPerValue(param);
-            });
-
-        actionInterface
-            ->registerRequest<MetaballsFromSimulationValue, brayns::Message>(
-                {"set-metaballs-per-simulation-value",
-                 "Adds a metaballs model representing the number of "
-                 "connections for a given frame"
-                 " and simulation value",
-                 "MetaballsFromSimulationValue",
-                 "Model, frame, and value to build the metaballs"},
-                [&](const MetaballsFromSimulationValue& param) {
-                    return _setMetaballsPerSimulationValue(param);
-                });
-
         actionInterface->registerRequest<CameraDefinition, brayns::Message>(
             {"set-odu-camera",
              "Set the camera in a position and with an specific orientation "
@@ -471,27 +392,6 @@ void CircuitExplorerPlugin::init()
         actionInterface->registerRequest<CameraDefinition>(
             {"get-odu-camera", "Returns the properties of the current camera"},
             [&]() -> CameraDefinition { return _getCamera(); });
-
-        actionInterface->registerRequest<AttachCellGrowthHandler,
-                                         brayns::Message>(
-            {"attach-cell-growth-handler",
-             "Attach a dynamic cell growing rendering system for a given model",
-             "AttachCellGrowthHandler",
-             "Model to which to attach the handler, and number of frames the "
-             "growth should span"},
-            [&](const AttachCellGrowthHandler& s) {
-                return _attachCellGrowthHandler(s);
-            });
-
-        actionInterface
-            ->registerRequest<AttachCircuitSimulationHandler, brayns::Message>(
-                {"attach-circuit-simulation-handler",
-                 "Dynamically loads and attach a simulation to a loaded model",
-                 "AttachCircuitSimulationHandler",
-                 "Model to which attach, and simulation information to fetch"},
-                [&](const AttachCircuitSimulationHandler& s) {
-                    return _attachCircuitSimulationHandler(s);
-                });
 
         actionInterface->registerRequest<ExportFramesToDisk, brayns::Message>(
             {"export-frames-to-disk",
@@ -575,21 +475,6 @@ void CircuitExplorerPlugin::init()
             {"add-box", "Adds an axis algined box to the scene", "AddBox",
              "The data to build and color the box"},
             [&](const AddBox& payload) { return _addBox(payload); });
-
-        actionInterface->registerRequest<RemapCircuit, RemapCircuitResult>(
-            {"remap-circuit-color",
-             "Remap the circuit colors to the specified scheme", "RemapCircuit",
-             "Scheme to which remap the circuits colors to"},
-            [&](const RemapCircuit& s) { return _remapCircuitToScheme(s); });
-
-        actionInterface->registerRequest<ColorCells, brayns::Message>(
-            {"color-cells",
-             "Color specific cells, given by GID, with specific "
-             "colors given in RGB",
-             "ColorCells",
-             "Information about the model, cells and color to "
-             "update"},
-            [&](const ColorCells& cc) { return _colorCells(cc); });
 
         actionInterface->registerRequest<MirrorModel, brayns::Message>(
             {"mirror-model", "Mirrors a model along a given axis",
@@ -736,17 +621,6 @@ void CircuitExplorerPlugin::postRender()
     }
 }
 
-void CircuitExplorerPlugin::releaseCircuitMapper(const size_t modelId)
-{
-    _mappers.erase(
-        std::remove_if(_mappers.begin(), _mappers.end(),
-                       [mid = modelId](
-                           const std::unique_ptr<CellObjectMapper>& mapper) {
-                           return mapper->getSourceModelId() == mid;
-                       }),
-        _mappers.end());
-}
-
 brayns::Message CircuitExplorerPlugin::_setMaterialExtraAttributes(
     const MaterialExtraAttributes& mea)
 {
@@ -754,28 +628,17 @@ brayns::Message CircuitExplorerPlugin::_setMaterialExtraAttributes(
 
     auto modelDescriptor = _api->getScene().getModel(mea.modelId);
     if (modelDescriptor)
+    {
         try
         {
-            auto materials = modelDescriptor->getModel().getMaterials();
-            for (auto& material : materials)
-            {
-                brayns::PropertyMap props;
-                props.setProperty({MATERIAL_PROPERTY_CAST_USER_DATA, false});
-                props.setProperty(
-                    {MATERIAL_PROPERTY_SHADING_MODE,
-                     static_cast<int>(MaterialShadingMode::diffuse)});
-                props.setProperty(
-                    {MATERIAL_PROPERTY_CLIPPING_MODE,
-                     static_cast<int>(MaterialClippingMode::no_clipping)});
-                props.setProperty({MATERIAL_PROPERTY_USER_PARAMETER, 1.0});
-                material.second->updateProperties(props);
-            }
+            CircuitExplorerMaterial::addExtraAttributes(modelDescriptor->getModel());
         }
         catch (const std::runtime_error& e)
         {
             PLUGIN_INFO << e.what() << std::endl;
             result.setError(3, e.what());
         }
+    }
     else
     {
         PLUGIN_INFO << "Model " << mea.modelId << " is not registered"
@@ -1341,375 +1204,6 @@ MaterialDescriptor CircuitExplorerPlugin::_getMaterial(
     return result;
 }
 
-RemapCircuitResult CircuitExplorerPlugin::_remapCircuitToScheme(
-    const RemapCircuit& payload)
-{
-    RemapCircuitResult result;
-    result.updated = false;
-
-    auto modelDescriptor = _api->getScene().getModel(payload.modelId);
-    if (modelDescriptor)
-    {
-        CellObjectMapper* mapper = getMapperForCircuit(payload.modelId);
-        if (mapper)
-        {
-            const auto schemeEnum =
-                stringToEnum<CircuitColorScheme>(payload.scheme);
-            auto remapResult =
-                mapper->remapCircuitColors(schemeEnum, _api->getScene());
-            if (remapResult.error > 0)
-                result.setError(remapResult.error, remapResult.message);
-            result.updated = remapResult.updated;
-            _dirty = true;
-            _api->getEngine().triggerRender();
-        }
-    }
-    else
-    {
-        result.setError(1, "The model with ID " +
-                               std::to_string(payload.modelId) +
-                               " does not allow color remapping");
-    }
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_colorCells(const ColorCells& payload)
-{
-    brayns::Message result;
-
-    if (payload.gids.size() * 3 != payload.colors.size())
-    {
-        result.setError(1, "There must be 3 color components for each GID");
-        return result;
-    }
-
-    const auto updateMatColor = [](brayns::ModelDescriptorPtr& model,
-                                   size_t matId,
-                                   const brayns::Vector3d& color) {
-        auto mat = model->getModel().getMaterial(matId);
-        if (mat)
-        {
-            mat->setDiffuseColor(color);
-            mat->markModified();
-            mat->commit();
-        }
-    };
-
-    auto modelDescriptor = _api->getScene().getModel(payload.modelId);
-    if (!modelDescriptor)
-    {
-        result.setError(2, "The model with ID " +
-                               std::to_string(payload.modelId) +
-                               " does not exists");
-        return result;
-    }
-
-    CellObjectMapper* mapper = getMapperForCircuit(payload.modelId);
-    if (mapper)
-    {
-        // Parse ranges
-        std::vector<std::vector<uint64_t>> gidBatches(payload.gids.size());
-        std::vector<brayns::Vector3d> gidColors(payload.gids.size());
-
-        for (size_t j = 0; j < payload.gids.size(); ++j)
-        {
-            const auto& gidBatchStr = payload.gids[j];
-            const std::vector<std::string> tokens =
-                brayns::string_utils::split(gidBatchStr, ',');
-            std::vector<uint64_t>& batchGids = gidBatches[j];
-            // Parse sub-ranges
-            for (const auto& batchToken : tokens)
-            {
-                auto dashPos = batchToken.find('-');
-                // single value
-                if (dashPos == std::string::npos)
-                    batchGids.push_back(std::stoul(batchToken));
-                else
-                {
-                    auto rangeStart = std::stoul(batchToken.substr(0, dashPos));
-                    auto rangeEnd = std::stoul(batchToken.substr(dashPos + 1));
-                    for (uint64_t i = rangeStart; i <= rangeEnd; ++i)
-                        batchGids.push_back(i);
-                }
-            }
-
-            // Add color for the range in the same index
-            const size_t colorIndex = j * 3;
-            gidColors[j] = brayns::Vector3d(payload.colors[colorIndex],
-                                            payload.colors[colorIndex + 1],
-                                            payload.colors[colorIndex + 2]);
-        }
-
-        // This should not happen
-        if (gidColors.size() != gidBatches.size())
-        {
-            result.setError(
-                9,
-                "After parsing, the number of gid batches and colors does "
-                "not match");
-            return result;
-        }
-
-        // Color cells
-        const auto& mapping = mapper->getMapping();
-        for (size_t i = 0; i < gidBatches.size(); ++i)
-        {
-            const std::vector<uint64_t>& gidBatch = gidBatches[i];
-            const brayns::Vector3d& color = gidColors[i];
-
-            for (const auto cellGID : gidBatch)
-            {
-                auto it = mapping.find(cellGID);
-                if (it != mapping.end())
-                {
-                    const MorphologyMap& mmap = it->second;
-                    for (const auto& kv : mmap._coneMap)
-                        updateMatColor(modelDescriptor, kv.first, color);
-                    for (const auto& kv : mmap._cylinderMap)
-                        updateMatColor(modelDescriptor, kv.first, color);
-                    for (const auto& kv : mmap._sdfBezierMap)
-                        updateMatColor(modelDescriptor, kv.first, color);
-                    for (const auto& kv : mmap._sdfGeometryMap)
-                        updateMatColor(modelDescriptor, kv.first, color);
-                    for (const auto& kv : mmap._sphereMap)
-                        updateMatColor(modelDescriptor, kv.first, color);
-                }
-            }
-        }
-
-        modelDescriptor->markModified();
-        _api->getScene().markModified();
-        _api->triggerRender();
-    }
-    else
-    {
-        result.setError(1, "The model with ID " +
-                               std::to_string(payload.modelId) +
-                               " does not allow color remapping");
-    }
-
-
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_setSynapseAttributes(
-    const SynapseAttributes& param)
-{
-    brayns::Message result;
-
-    try
-    {
-        _synapseAttributes = param;
-        SynapseJSONLoader loader(_api->getScene(), _synapseAttributes);
-        brayns::Vector3fs colors;
-        for (const auto& htmlColor : _synapseAttributes.htmlColors)
-        {
-            auto hexCode = htmlColor;
-            if (hexCode.at(0) == '#')
-            {
-                hexCode = hexCode.erase(0, 1);
-            }
-            int r, g, b;
-            std::istringstream(hexCode.substr(0, 2)) >> std::hex >> r;
-            std::istringstream(hexCode.substr(2, 2)) >> std::hex >> g;
-            std::istringstream(hexCode.substr(4, 2)) >> std::hex >> b;
-
-            brayns::Vector3f color{r / 255.f, g / 255.f, b / 255.f};
-            colors.push_back(color);
-        }
-        const auto modelDescriptor =
-            loader.importSynapsesFromGIDs(_synapseAttributes, colors);
-
-        _api->getScene().addModel(modelDescriptor);
-
-        PLUGIN_INFO << "Synapses successfully added for GID "
-                    << _synapseAttributes.gid << std::endl;
-        _dirty = true;
-    }
-    catch (const std::runtime_error& e)
-    {
-        PLUGIN_ERROR << e.what() << std::endl;
-        result.setError(1, e.what());
-    }
-    catch (...)
-    {
-        PLUGIN_ERROR
-            << "Unexpected exception occured in _updateMaterialFromJson"
-            << std::endl;
-        result.setError(2,
-                        "Unexpected exception occured in _setSynapseAttribute");
-    }
-
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_saveModelToCache(
-    const SaveModelToCache& saveModel)
-{
-    brayns::Message result;
-
-    auto modelDescriptor = _api->getScene().getModel(saveModel.modelId);
-    if (modelDescriptor)
-    {
-        BrickLoader brickLoader(_api->getScene());
-        brickLoader.exportToFile(modelDescriptor, saveModel.path);
-    }
-    else
-    {
-        PLUGIN_ERROR << "Model " << saveModel.modelId << " is not registered"
-                     << std::endl;
-        result.setError(1, "Model " + std::to_string(saveModel.modelId) +
-                               " is" + " not registered");
-    }
-
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_setConnectionsPerValue(
-    const ConnectionsPerValue& cpv)
-{
-    brayns::Message result;
-
-    PointCloud pointCloud;
-
-    auto modelDescriptor = _api->getScene().getModel(cpv.modelId);
-    if (modelDescriptor)
-    {
-        auto simulationHandler =
-            modelDescriptor->getModel().getSimulationHandler();
-        if (!simulationHandler)
-        {
-            BRAYNS_ERROR << "Scene has not user data handler" << std::endl;
-            result.setError(1, "Scene has no user data handler");
-            return result;
-        }
-
-        auto& model = modelDescriptor->getModel();
-        for (const auto& spheres : model.getSpheres())
-        {
-            for (const auto& s : spheres.second)
-            {
-                const float* data = static_cast<float*>(
-                    simulationHandler->getFrameData(cpv.frame));
-
-                const float value = data[s.userData];
-                if (abs(value - cpv.value) < cpv.epsilon)
-                    pointCloud[spheres.first].push_back(
-                        {s.center.x, s.center.y, s.center.z, s.radius});
-            }
-        }
-
-        if (!pointCloud.empty())
-        {
-            auto meshModel = _api->getScene().createModel();
-            PointCloudMesher mesher;
-            if (mesher.toConvexHull(*meshModel, pointCloud))
-            {
-                auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
-                    std::move(meshModel),
-                    "Connection for value " + std::to_string(cpv.value));
-
-                _api->getScene().addModel(modelDesc);
-                _dirty = true;
-            }
-        }
-        else
-        {
-            PLUGIN_INFO << "No connections added for value "
-                        << std::to_string(cpv.value) << std::endl;
-            result.setError(2, "No connections added for value " +
-                                   std::to_string(cpv.value));
-        }
-    }
-    else
-    {
-        PLUGIN_INFO << "Model " << cpv.modelId << " is not registered"
-                    << std::endl;
-        result.setError(3, "Model " + std::to_string(cpv.modelId) + " is" +
-                               " not registered");
-    }
-
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_setMetaballsPerSimulationValue(
-    const MetaballsFromSimulationValue& mpsv)
-{
-    brayns::Message result;
-
-    PointCloud pointCloud;
-
-    auto modelDescriptor = _api->getScene().getModel(mpsv.modelId);
-    if (modelDescriptor)
-    {
-        auto simulationHandler =
-            modelDescriptor->getModel().getSimulationHandler();
-        if (!simulationHandler)
-        {
-            BRAYNS_ERROR << "Scene has not user data handler" << std::endl;
-            result.setError(1, "Scene has no user data handler");
-            return result;
-        }
-
-        auto& model = modelDescriptor->getModel();
-        for (const auto& spheres : model.getSpheres())
-        {
-            for (const auto& s : spheres.second)
-            {
-                const float* data = static_cast<float*>(
-                    simulationHandler->getFrameData(mpsv.frame));
-
-                const float value = data[s.userData];
-                if (abs(value - mpsv.value) < mpsv.epsilon)
-                    pointCloud[spheres.first].push_back(
-                        {s.center.x, s.center.y, s.center.z, s.radius});
-            }
-        }
-
-        if (!pointCloud.empty())
-        {
-            auto meshModel = _api->getScene().createModel();
-            PointCloudMesher mesher;
-            if (mesher.toMetaballs(*meshModel, pointCloud, mpsv.gridSize,
-                                   mpsv.threshold))
-            {
-                auto modelDesc = std::make_shared<brayns::ModelDescriptor>(
-                    std::move(meshModel),
-                    "Connection for value " + std::to_string(mpsv.value));
-
-                _api->getScene().addModel(modelDesc);
-                PLUGIN_INFO << "Metaballs successfully added to the scene"
-                            << std::endl;
-
-                _dirty = true;
-            }
-            else
-            {
-                PLUGIN_INFO << "No mesh was created for value "
-                            << std::to_string(mpsv.value) << std::endl;
-                result.setError(2, "No mesh was created for value " +
-                                       std::to_string(mpsv.value));
-            }
-        }
-        else
-        {
-            PLUGIN_INFO << "No connections added for value "
-                        << std::to_string(mpsv.value) << std::endl;
-            result.setError(3, "No connections added for value " +
-                                   std::to_string(mpsv.value));
-        }
-    }
-    else
-    {
-        PLUGIN_INFO << "Model " << mpsv.modelId << " is not registered"
-                    << std::endl;
-        result.setError(4, "Model " + std::to_string(mpsv.modelId) +
-                               " is not registered");
-    }
-
-    return result;
-}
-
 brayns::Message CircuitExplorerPlugin::_setCamera(
     const CameraDefinition& payload)
 {
@@ -1768,55 +1262,6 @@ CameraDefinition CircuitExplorerPlugin::_getCamera()
     PLUGIN_DEBUG << "GET: " << p << ", " << d << ", " << u << ", "
                  << camera.getOrientation() << std::endl;
     return cd;
-}
-
-brayns::Message CircuitExplorerPlugin::_attachCellGrowthHandler(
-    const AttachCellGrowthHandler& payload)
-{
-    brayns::Message result;
-
-    PLUGIN_INFO << "Attaching Cell Growth Handler to model " << payload.modelId
-                << std::endl;
-    auto modelDescriptor = _api->getScene().getModel(payload.modelId);
-    if (modelDescriptor)
-    {
-        auto handler = std::make_shared<CellGrowthHandler>(payload.nbFrames);
-        modelDescriptor->getModel().setSimulationHandler(handler);
-    }
-
-    return result;
-}
-
-brayns::Message CircuitExplorerPlugin::_attachCircuitSimulationHandler(
-    const AttachCircuitSimulationHandler& payload)
-{
-    brayns::Message result;
-
-    PLUGIN_INFO << "Attaching Circuit Simulation Handler to model "
-                << payload.modelId << std::endl;
-    auto modelDescriptor = _api->getScene().getModel(payload.modelId);
-    if (modelDescriptor)
-    {
-        const brion::BlueConfig blueConfiguration(payload.circuitConfiguration);
-        const brain::Circuit circuit(blueConfiguration);
-        auto gids = circuit.getGIDs();
-        auto handler = std::make_shared<VoltageSimulationHandler>(
-            blueConfiguration.getReportSource(payload.reportName).getPath(),
-            gids, payload.synchronousMode);
-        auto& model = modelDescriptor->getModel();
-        model.setSimulationHandler(handler);
-        AdvancedCircuitLoader::setSimulationTransferFunction(
-            _api->getScene().getTransferFunction());
-    }
-    else
-    {
-        PLUGIN_ERROR << "Model " << payload.modelId << " does not exist"
-                     << std::endl;
-        result.setError(1, "Model " + std::to_string(payload.modelId) +
-                               " does not exist");
-    }
-
-    return result;
 }
 
 brayns::Message CircuitExplorerPlugin::_exportFramesToDisk(
@@ -2092,139 +1537,41 @@ brayns::Message CircuitExplorerPlugin::_traceAnterogrades(
 
     auto modelDescriptor =
         _api->getScene().getModel(static_cast<size_t>(payload.modelId));
-    if (!modelDescriptor)
+    if (!modelDescriptor || !_colorManager.handlerExists(payload.modelId))
     {
         result.setError(5,
                         "The given model ID does not correspond to any "
-                        "existing scene model");
+                        "existing circuit model");
         return result;
     }
 
-    auto cellMapper = getMapperForCircuit(payload.modelId);
-    if (!cellMapper)
-    {
-        result.setError(
-            6, "There is not cell mapping information for the given circuit");
-        return result;
-    }
+    const brayns::Vector4f nonConnectColor(payload.nonConnectedCellsColor[0],
+                                           payload.nonConnectedCellsColor[1],
+                                           payload.nonConnectedCellsColor[2],
+                                           payload.nonConnectedCellsColor[3]);
+    _colorManager.updateSingleColor(payload.modelId, nonConnectColor);
 
-    const auto& cellMaterialMap = cellMapper->getMapping();
+    std::map<uint64_t, brayns::Vector4f> colorMap;
 
-    // Function to search for material ids based on cell GIDs using the mapper
-    const std::function<void(std::unordered_set<int32_t>&,
-                             const std::vector<uint32_t>&,
-                             const std::unordered_map<size_t, MorphologyMap>&)>
-        searchFunc = [](std::unordered_set<int32_t>& buffer,
-                        const std::vector<uint32_t>& src,
-                        const std::unordered_map<size_t, MorphologyMap>& m) {
-            for (const auto& cellId : src)
-            {
-                auto morphologyMapIt = m.find(cellId);
-                if (morphologyMapIt != m.end())
-                {
-                    const auto& morphologyMap = morphologyMapIt->second;
-                    if (morphologyMap._hasMesh)
-                        buffer.insert(
-                            static_cast<int32_t>(morphologyMap._triangleIndx));
-                    for (const auto& kvp : morphologyMap._coneMap)
-                        buffer.insert(static_cast<int32_t>(kvp.first));
-                    for (const auto& kvp : morphologyMap._sphereMap)
-                        buffer.insert(static_cast<int32_t>(kvp.first));
-                    for (const auto& kvp : morphologyMap._cylinderMap)
-                        buffer.insert(static_cast<int32_t>(kvp.first));
-                    for (const auto& kvp : morphologyMap._sdfGeometryMap)
-                        buffer.insert(static_cast<int32_t>(kvp.first));
-                }
-            }
-        };
+    const brayns::Vector4f sourceCellColor(payload.sourceCellColor[0], payload.sourceCellColor[1],
+                                           payload.sourceCellColor[2], payload.sourceCellColor[3]);
+    for(const auto gid : payload.cellGids)
+        colorMap[gid] = sourceCellColor;
 
-    // Gather material ids for the source and target cells
-    std::unordered_set<int32_t> sourceCellMaterialIds;
-    searchFunc(sourceCellMaterialIds, payload.cellGids, cellMaterialMap);
-    std::unordered_set<int32_t> targetCellMaterialIds;
-    searchFunc(targetCellMaterialIds, payload.targetCellGids, cellMaterialMap);
+    const brayns::Vector4f targetCellColor(payload.connectedCellsColor[0],
+                                           payload.connectedCellsColor[1],
+                                           payload.connectedCellsColor[2],
+                                           payload.connectedCellsColor[3]);
+    for(const auto gid : payload.targetCellGids)
+        colorMap[gid] = targetCellColor;
 
-    // Enable extra attributes on materials
-    MaterialExtraAttributes mea;
-    mea.modelId = payload.modelId;
-    _setMaterialExtraAttributes(mea);
-
-    // Reset all cells to non-stained color
-    MaterialRangeDescriptor mrd;
-    mrd.modelId = payload.modelId;
-    mrd.diffuseColor = {static_cast<float>(payload.nonConnectedCellsColor[0]),
-                        static_cast<float>(payload.nonConnectedCellsColor[1]),
-                        static_cast<float>(payload.nonConnectedCellsColor[2])};
-
-    mrd.specularColor = {1.f, 1.f, 1.f};
-    mrd.specularExponent = 20.f;
-    mrd.glossiness = 1.f;
-    mrd.reflectionIndex = 0.f;
-    mrd.refractionIndex = 0.f;
-    mrd.opacity = std::min<float>(
-        std::max<float>(payload.nonConnectedCellsColor[3], 0.1f), 1.f);
-    mrd.shadingMode = static_cast<int>(MaterialShadingMode::diffuse);
-    mrd.clippingMode = static_cast<int>(MaterialClippingMode::no_clipping);
-    mrd.simulationDataCast = false;
-    _setMaterialRange(mrd);
-
-    // Stain (if any) source cell
-    if (sourceCellMaterialIds.size() > 0)
-    {
-        MaterialRangeDescriptor sourcesMrd = mrd;
-        sourcesMrd.diffuseColor = {
-            static_cast<float>(payload.sourceCellColor[0]),
-            static_cast<float>(payload.sourceCellColor[1]),
-            static_cast<float>(payload.sourceCellColor[2])};
-        sourcesMrd.opacity = 1.f;
-        sourcesMrd.materialIds.insert(sourcesMrd.materialIds.end(),
-                                      sourceCellMaterialIds.begin(),
-                                      sourceCellMaterialIds.end());
-        _setMaterialRange(sourcesMrd);
-    }
-
-    if (targetCellMaterialIds.size() > 0)
-    {
-        MaterialRangeDescriptor targetsMrd = mrd;
-        targetsMrd.diffuseColor = {
-            static_cast<float>(payload.connectedCellsColor[0]),
-            static_cast<float>(payload.connectedCellsColor[1]),
-            static_cast<float>(payload.connectedCellsColor[2])};
-        targetsMrd.opacity = 1.f;
-        targetsMrd.materialIds.insert(targetsMrd.materialIds.end(),
-                                      targetCellMaterialIds.begin(),
-                                      targetCellMaterialIds.end());
-        _setMaterialRange(targetsMrd);
-    }
+    _colorManager.updateColorsById(payload.modelId, colorMap);
 
     modelDescriptor->markModified();
     _api->getScene().markModified();
     _api->triggerRender();
 
     return result;
-}
-
-void CircuitExplorerPlugin::_createShapeMaterial(brayns::ModelPtr& model,
-                                                 const size_t id,
-                                                 const brayns::Vector3d& color,
-                                                 const double& opacity)
-{
-    brayns::MaterialPtr mptr = model->createMaterial(id, std::to_string(id));
-    mptr->setDiffuseColor(color);
-    mptr->setOpacity(opacity);
-    mptr->setSpecularExponent(20.0);
-
-    brayns::PropertyMap props;
-    props.setProperty({MATERIAL_PROPERTY_CAST_USER_DATA, false});
-    props.setProperty({MATERIAL_PROPERTY_SHADING_MODE,
-                       static_cast<int>(MaterialShadingMode::diffuse)});
-    props.setProperty({MATERIAL_PROPERTY_CLIPPING_MODE,
-                       static_cast<int>(MaterialClippingMode::no_clipping)});
-
-    mptr->updateProperties(props);
-
-    mptr->markModified();
-    mptr->commit();
 }
 
 AddShapeResult CircuitExplorerPlugin::_addSphere(const AddSphere& payload)
@@ -2255,27 +1602,22 @@ AddShapeResult CircuitExplorerPlugin::_addSphere(const AddSphere& payload)
 
     brayns::ModelPtr modelptr = _api->getScene().createModel();
 
-    const size_t matId = 1;
-    const brayns::Vector3d color(payload.color[0], payload.color[1],
-                                 payload.color[2]);
+    const brayns::Vector3d color(payload.color[0], payload.color[1], payload.color[2]);
     const double opacity = payload.color[3];
-    _createShapeMaterial(modelptr, matId, color, opacity);
+    const auto matId = __createMaterial(*modelptr, color, opacity);
 
-    const brayns::Vector3f center(payload.center[0], payload.center[1],
-                                  payload.center[2]);
+    const brayns::Vector3f center(payload.center[0], payload.center[1], payload.center[2]);
     modelptr->addSphere(matId, {center, static_cast<float>(payload.radius)});
 
     size_t numModels = _api->getScene().getNumModels();
-    const std::string name = payload.name.empty()
-                                 ? "sphere_" + std::to_string(numModels)
-                                 : payload.name;
+    const std::string name = payload.name.empty() ? "sphere_" + std::to_string(numModels)
+                                                  : payload.name;
     result.id = _api->getScene().addModel(
         std::make_shared<brayns::ModelDescriptor>(std::move(modelptr), name));
-    _api->getScene().markModified();
 
+    _api->getScene().markModified();
     _api->getEngine().triggerRender();
 
-    _dirty = true;
     return result;
 }
 
@@ -2318,11 +1660,10 @@ AddShapeResult CircuitExplorerPlugin::_addPill(const AddPill& payload)
 
     brayns::ModelPtr modelptr = _api->getScene().createModel();
 
-    size_t matId = 1;
     const brayns::Vector3d color(payload.color[0], payload.color[1],
                                  payload.color[2]);
     const double opacity = payload.color[3];
-    _createShapeMaterial(modelptr, matId, color, opacity);
+    const auto matId = __createMaterial(*modelptr, color, opacity);
 
     const brayns::Vector3f p0(payload.p1[0], payload.p1[1], payload.p1[2]);
     const brayns::Vector3f p1(payload.p2[0], payload.p2[1], payload.p2[2]);
@@ -2385,11 +1726,10 @@ AddShapeResult CircuitExplorerPlugin::_addCylinder(const AddCylinder& payload)
 
     brayns::ModelPtr modelptr = _api->getScene().createModel();
 
-    const size_t matId = 1;
     const brayns::Vector3d color(payload.color[0], payload.color[1],
                                  payload.color[2]);
     const double opacity = payload.color[3];
-    _createShapeMaterial(modelptr, matId, color, opacity);
+    const auto matId = __createMaterial(*modelptr, color, opacity);
 
     const brayns::Vector3f center(payload.center[0], payload.center[1],
                                   payload.center[2]);
@@ -2438,11 +1778,10 @@ AddShapeResult CircuitExplorerPlugin::_addBox(const AddBox& payload)
 
     brayns::ModelPtr modelptr = _api->getScene().createModel();
 
-    const size_t matId = 1;
     const brayns::Vector3d color(payload.color[0], payload.color[1],
                                  payload.color[2]);
     const double opacity = payload.color[3];
-    _createShapeMaterial(modelptr, matId, color, opacity);
+    const auto matId = __createMaterial(*modelptr, color, opacity);
 
     const brayns::Vector3f minCorner(payload.minCorner[0], payload.minCorner[1],
                                      payload.minCorner[2]);
@@ -2844,19 +2183,21 @@ brayns::Message CircuitExplorerPlugin::_colorCircuitById(const RequestColorCircu
 {
     brayns::Message result;
 
-    if(!payload.ids.empty() && payload.ids.size() != payload.colors.size() / 3)
+    if(!payload.ids.empty() && payload.ids.size() != payload.colors.size() / 4)
     {
-        result.setError(1, "There must be a color specified for each entry in the 'ids' list");
+        result.setError(1, "There must be a color (4 decimal values, RGBA) specified for each "
+                           "entry in the 'ids' list");
         return result;
     }
 
-    std::unordered_map<std::string, brayns::Vector3f> colorMap;
+    std::unordered_map<std::string, brayns::Vector4f> colorMap;
     for(size_t i = 0; i < payload.ids.size(); ++i)
     {
-        const auto colorIdx = i * 3;
-        colorMap[payload.ids[i]] = brayns::Vector3f(payload.colors[colorIdx],
+        const auto colorIdx = i * 4;
+        colorMap[payload.ids[i]] = brayns::Vector4f(payload.colors[colorIdx],
                                                     payload.colors[colorIdx + 1],
-                                                    payload.colors[colorIdx + 2]);
+                                                    payload.colors[colorIdx + 2],
+                                                    payload.colors[colorIdx + 3]);
     }
 
     try
@@ -2877,17 +2218,18 @@ brayns::Message CircuitExplorerPlugin::_colorCircuitBySingleColor(
         const RequestColorCircuitBySingleColor& payload)
 {
     brayns::Message result;
-    if(payload.color.size() < 3)
+    if(payload.color.size() < 4)
     {
-        result.setError(1, "'color' must contain 3 decimal RGB values");
+        result.setError(1, "'color' must contain 4 decimal RGBA values");
         return result;
     }
 
     try
     {
-        _colorManager.updateSingleColor(payload.modelId, brayns::Vector3f(payload.color[0],
+        _colorManager.updateSingleColor(payload.modelId, brayns::Vector4f(payload.color[0],
                                                                           payload.color[1],
-                                                                          payload.color[2]));
+                                                                          payload.color[2],
+                                                                          payload.color[3]));
         _api->getScene().markModified();
         _api->triggerRender();
     }
@@ -2933,19 +2275,21 @@ brayns::Message CircuitExplorerPlugin::_colorCircuitByMethod(
 {
     brayns::Message result;
 
-    if(!payload.variables.empty() && payload.variables.size() != payload.colors.size() / 3)
+    if(!payload.variables.empty() && payload.variables.size() != payload.colors.size() / 4)
     {
-        result.setError(1, "There must be a color specified for each entry in 'variables' list");
+        result.setError(1, "There must be a color (4 decimal values, RGBA) specified for each "
+                           "entry in the 'ids' list");
         return result;
     }
 
-    std::unordered_map<std::string, brayns::Vector3f> colorMap;
+    std::unordered_map<std::string, brayns::Vector4f> colorMap;
     for(size_t i = 0; i < payload.variables.size(); ++i)
     {
-        const auto colorIdx = i * 3;
-        colorMap[payload.variables[i]] = brayns::Vector3f(payload.colors[colorIdx],
+        const auto colorIdx = i * 4;
+        colorMap[payload.variables[i]] = brayns::Vector4f(payload.colors[colorIdx],
                                                           payload.colors[colorIdx + 1],
-                                                          payload.colors[colorIdx + 2]);
+                                                          payload.colors[colorIdx + 2],
+                                                          payload.colors[colorIdx + 3]);
     }
 
     try

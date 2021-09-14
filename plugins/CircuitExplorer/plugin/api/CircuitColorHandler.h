@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include <vector>
 
-using ColorVariables = std::unordered_map<std::string, brayns::Vector3f>;
+using ColorVariables = std::unordered_map<std::string, brayns::Vector4f>;
 
 /**
  * @brief The ElementMaterialMap class is the base class for the elemements that
@@ -38,12 +38,22 @@ public:
     using Ptr = std::unique_ptr<ElementMaterialMap>;
 
     virtual void setColor(brayns::ModelDescriptor* model,
-                          const brayns::Vector3f& color) = 0;
+                          const brayns::Vector4f& color) = 0;
 
 protected:
     void _updateMaterial(brayns::ModelDescriptor* model,
                          const size_t id,
-                         const brayns::Vector3f& color) const;
+                         const brayns::Vector4f& color) const;
+};
+
+/**
+ * @brief The MethodVariableCache struct holds the information of a specific
+ *        method variables, with a parameter to allow lazy caching
+ */
+struct MethodVariableCache
+{
+    bool initialized {false};
+    std::vector<std::string> variables;
 };
 
 /**
@@ -91,9 +101,15 @@ public:
     void updateColorById(const ColorVariables& variables);
 
     /**
+     * @brief updateColorById Updates color of the elements by the ID they are identified by.
+     *        Specific ids might be specified to isolate the update
+     */
+    void updateColorById(const std::map<uint64_t, brayns::Vector4f>& colorMap);
+
+    /**
      * @brief updateSingleColor Updates the color of all the elements to the given color
      */
-    void updateSingleColor(const brayns::Vector3f& color);
+    void updateSingleColor(const brayns::Vector4f& color);
 
     /**
      * @brief updateColor Updates the circuit color according to the given method. If one or
@@ -105,23 +121,23 @@ public:
     size_t getModelID() const noexcept;
 
 protected:
-    void _updateMaterial(const size_t id, const brayns::Vector3f& color);
+    void _updateMaterial(const size_t id, const brayns::Vector4f& color);
 
     brayns::ModelDescriptor* _model;
     std::vector<std::string> _methods;
-    std::vector<std::vector<std::string>> _methodVariables;
+    mutable std::vector<MethodVariableCache> _methodVariables;
 
 protected:
     virtual void _setElementsImpl(const std::vector<uint64_t>& ids,
                                   std::vector<ElementMaterialMap::Ptr>&& elements) = 0;
 
-    virtual std::vector<std::string> _getMethodsImpl() = 0;
+    virtual std::vector<std::string> _getMethodsImpl() const = 0;
 
-    virtual std::vector<std::string> _getMethodVariablesImpl(const std::string& method)= 0;
+    virtual std::vector<std::string> _getMethodVariablesImpl(const std::string& method) const = 0;
 
-    virtual void _updateColorByIdImpl(const std::map<uint64_t, brayns::Vector3f>& colorMap) = 0;
+    virtual void _updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>& colorMap) = 0;
 
-    virtual void _updateSingleColorImpl(const brayns::Vector3f& color) = 0;
+    virtual void _updateSingleColorImpl(const brayns::Vector4f& color) = 0;
 
     virtual void _updateColorImpl(const std::string& method, const ColorVariables& variables) = 0;
 };

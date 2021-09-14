@@ -1,9 +1,7 @@
-/* Copyright (c) 2018-2019, EPFL/Blue Brain Project
+/* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
- *
- * This file is part of the circuit explorer for Brayns
- * <https://github.com/favreau/Brayns-UC-CircuitExplorer>
+ * Authors: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ *          Nadir Roman Guerrero <nadir.romanguerrero@epfl.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -19,23 +17,17 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
  */
 
-#ifndef MEMBRANELESS_ORGANELLES_PLUGIN_H
-#define MEMBRANELESS_ORGANELLES_PLUGIN_H
+#pragma once
 
-#include <plugin/api/CellObjectMapper.h>
-#include <plugin/api/CircuitColorManager.h>
-#include <plugin/api/CircuitExplorerParams.h>
-#include <plugin/io/AbstractCircuitLoader.h>
-
-#include <array>
 #include <brayns/common/types.h>
 #include <brayns/pluginapi/ExtensionPlugin.h>
-#include <vector>
+
+#include <plugin/api/CircuitColorManager.h>
+#include <plugin/api/CircuitExplorerParams.h>
 
 /**
  * @brief The CircuitExplorerPlugin class manages the loading and visualization
- * of the Blue Brain Project micro-circuits, and allows visualisation of voltage
- * simulations
+ * of the neuronscientific data (neuronal circuits, synapses, simulations, etc.)
  */
 class CircuitExplorerPlugin : public brayns::ExtensionPlugin
 {
@@ -50,30 +42,14 @@ public:
     void preRender() final;
     void postRender() final;
 
-    template<class T,
-             typename = std::enable_if_t<std::is_base_of<CellObjectMapper, T>::value>
-            >
-    void addCircuitMapper(T&& mapper)
-    {
-        _mappers.emplace_back(std::make_unique<T>(std::forward<T>(mapper)));
-    }
-    void releaseCircuitMapper(const size_t modelId);
-
 private:
-    CellObjectMapper* getMapperForCircuit(const size_t modelId) noexcept
-    {
-        for(auto& mapper : _mappers)
-        {
-            if(mapper->getSourceModelId() == modelId)
-                return mapper.get();
-        }
-
-        return nullptr;
-    }
-
-    // Rendering
+    // Custom camera handling (TODO: Move to core)
     brayns::Message _setCamera(const CameraDefinition&);
     CameraDefinition _getCamera();
+
+    // Material handling (TODO: Move to core)
+    MaterialIds _getMaterialIds(const ModelId& modelId);
+    MaterialDescriptor _getMaterial(const ModelMaterialId& mmId);
     brayns::Message _setMaterial(const MaterialDescriptor&);
     brayns::Message _setMaterials(const MaterialsDescriptor&);
     brayns::Message _setMaterialRange(const MaterialRangeDescriptor&);
@@ -81,18 +57,7 @@ private:
     MaterialProperties _getMaterialProperties();
     brayns::Message _updateMaterialProperties(const UpdateMaterialProperties&);
 
-    // Experimental
-    brayns::Message _setSynapseAttributes(const SynapseAttributes&);
-    brayns::Message _setConnectionsPerValue(const ConnectionsPerValue&);
-    brayns::Message _setMetaballsPerSimulationValue(const MetaballsFromSimulationValue&);
-    brayns::Message _saveModelToCache(const SaveModelToCache&);
-
-    // Handlers
-    brayns::Message _attachCellGrowthHandler(const AttachCellGrowthHandler& payload);
-    brayns::Message _attachCircuitSimulationHandler(
-        const AttachCircuitSimulationHandler& payload);
-
-    // Movie production
+    // Movie production (TODO: MOve to core)
     brayns::Message _exportFramesToDisk(const ExportFramesToDisk& payload);
     void _doExportFrameToDisk();
     FrameExportProgress _getFrameExportProgress();
@@ -102,29 +67,15 @@ private:
     // Anterograde tracing
     brayns::Message _traceAnterogrades(const AnterogradeTracing& payload);
 
-    // Add geometry
-    void _createShapeMaterial(brayns::ModelPtr& model,
-                              const size_t id,
-                              const brayns::Vector3d& color,
-                              const double& opacity);
+    // Geometry
     AddShapeResult _addSphere(const AddSphere& payload);
     AddShapeResult _addPill(const AddPill& payload);
     AddShapeResult _addCylinder(const AddCylinder& payload);
     AddShapeResult _addBox(const AddBox& payload);
-
-
-    // Predefined models
     brayns::Message _addGrid(const AddGrid& payload);
     brayns::Message _addColumn(const AddColumn& payload);
 
-    // Get material information
-    MaterialIds _getMaterialIds(const ModelId& modelId);
-    MaterialDescriptor _getMaterial(const ModelMaterialId& mmId);
-
-    // Remap circuit colors to a specific scheme
-    RemapCircuitResult _remapCircuitToScheme(const RemapCircuit& payload);
-    brayns::Message _colorCells(const ColorCells& payload);
-
+    // Model geoemtry manipulation
     brayns::Message _mirrorModel(const MirrorModel& payload);
     brayns::Message _changeCircuitThickness(const CircuitThickness& payload);
 
@@ -136,9 +87,6 @@ private:
     brayns::Message _colorCircuitByMethod(const RequestColorCircuitByMethod& payload);
 
 private:
-
-    SynapseAttributes _synapseAttributes;
-
     bool _dirty{false};
 
     ExportFramesToDisk _exportFramesToDiskPayload;
@@ -151,8 +99,5 @@ private:
     bool _exportFrameError {false};
     std::string _exportFrameErrorMessage;
 
-    std::vector<std::unique_ptr<CellObjectMapper>> _mappers;
-
     CircuitColorManager _colorManager;
 };
-#endif
