@@ -18,6 +18,7 @@
 
 #include "VasculaturePopulationLoader.h"
 
+#include <plugin/api/Log.h>
 #include <plugin/io/morphology/vasculature/VasculatureInstance.h>
 #include <plugin/io/sonataloader/data/SonataVasculature.h>
 #include <plugin/io/sonataloader/populations/nodes/colorhandlers/VasculatureColorHandler.h>
@@ -60,15 +61,18 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
                 return r * mult;
             });
         }
-
     }
 
     std::vector<MorphologyInstancePtr> result (startPoints.size());
     const auto requestedSections = loadSettings.vasculature.sections;
 
+    PLUGIN_WARN << "Vasculature section check disabled. Test data has wrong 'type' dataset"
+                << std::endl;
+
     for(size_t i = 0; i < startPoints.size(); ++i)
     {
-        if(!static_cast<uint8_t>(sectionTypes[i] & requestedSections))
+        if(sectionTypes[i] != VasculatureSection::NONE
+                && !static_cast<uint8_t>(sectionTypes[i] & requestedSections))
             continue;
 
         result[i] = std::make_unique<VasculatureInstance>(startPoints[i],

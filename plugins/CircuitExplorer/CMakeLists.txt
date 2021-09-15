@@ -52,6 +52,8 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/bbploader/BBPLoaderProperties.cpp
     plugin/io/bbploader/CellLoader.cpp
     plugin/io/bbploader/SynapseLoader.cpp
+    plugin/io/bbploader/colorhandlers/NeuronColorHandler.cpp
+    plugin/io/bbploader/colorhandlers/SynapseColorHandler.cpp
     plugin/io/bbploader/simulation/CompartmentSimulation.cpp
     plugin/io/bbploader/simulation/SpikeSimulation.cpp
     plugin/io/bbploader/simulation/handlers/CompartmentHandler.cpp
@@ -117,6 +119,8 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/bbploader/BBPLoaderProperties.h
     plugin/io/bbploader/CellLoader.h
     plugin/io/bbploader/SynapseLoader.h
+    plugin/io/bbploader/colorhandlers/NeuronColorHandler.h
+    plugin/io/bbploader/colorhandlers/SynapseColorHandler.h
     plugin/io/bbploader/simulation/CompartmentSimulation.h
     plugin/io/bbploader/simulation/Simulation.h
     plugin/io/bbploader/simulation/SimulationType.h
@@ -222,6 +226,7 @@ set(BRAYNSCIRCUITEXPLORER_LINK_LIBRARIES
     ${FREEIMAGE_LIBRARIES} ${HDF5_LIBRARIES}
     HighFive
     nlohmann_json::nlohmann_json
+    MVDTool
 )
 
 set(BRAYNSCIRCUITEXPLORER_OMIT_LIBRARY_HEADER ON)

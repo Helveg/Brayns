@@ -31,9 +31,9 @@ namespace
 {
 using string_list = std::vector<std::string>;
 
-void checkEdges(const bbp::sonata::CircuitConfig& config,
-                const brayns::PropertyMap& props,
-                const size_t numNodes)
+void __checkEdges(const bbp::sonata::CircuitConfig& config,
+                  const brayns::PropertyMap& props,
+                  const size_t numNodes)
 {
     const auto diskEdgePopulations = config.listEdgePopulations();
     const auto& edgePops = props.getPropertyRef<string_list>(PROPERTY_EDGEPOPULATIONS.name);
@@ -124,9 +124,9 @@ void checkEdges(const bbp::sonata::CircuitConfig& config,
 /**
  * @brief Checks the sanity of the parameter to configure the loading of node sets
  */
-void checkNodeSets(const bbp::sonata::CircuitConfig& config,
-                   const brayns::PropertyMap& props,
-                   const size_t numNodes)
+void __checkNodeSets(const bbp::sonata::CircuitConfig& config,
+                     const brayns::PropertyMap& props,
+                     const size_t numNodes)
 {
     const auto& nodeSets = props.getPropertyRef<string_list>(PROPERTY_NODESETS.name);
     // There must be one specified for each population (it can be an empty string)
@@ -168,8 +168,8 @@ void checkNodeSets(const bbp::sonata::CircuitConfig& config,
     }
 }
 
-void checkMorphologyParts(const brayns::PropertyMap& props,
-                          const size_t numNodes)
+void __checkMorphologyParts(const brayns::PropertyMap& props,
+                            const size_t numNodes)
 {
     const auto& parts = props.getPropertyRef<string_list>(PROPERTY_NEURONPARTS.name);
     if(parts.size() != numNodes)
@@ -204,8 +204,23 @@ void checkMorphologyParts(const brayns::PropertyMap& props,
                                     "one per population (must be one of the possible values)");
 }
 
-void checkNodeIds(const brayns::PropertyMap& props,
-                  const size_t numNodes)
+void __ensureMinimalSections(const bbp::sonata::CircuitConfig& config,
+                             const NeuronSection section,
+                             const VasculatureSection vascSection,
+                             const std::string& nodePopulationName)
+{
+    const auto props = config.getNodePopulationProperties(nodePopulationName);
+    if((props.type == "biophysical" || props.type == "astrocyte")
+            && section == NeuronSection::NONE)
+        throw std::invalid_argument("At least a valid neuron morphology seciton must be specified "
+                                    "to load for biophysical and astorcyte node populations");
+    else if(props.type == "vasculature" && vascSection == VasculatureSection::NONE)
+        throw std::invalid_argument("At least a valid vasculature seciton must be specified "
+                                    "to load for vasculature node populations");
+}
+
+void __checkNodeIds(const brayns::PropertyMap& props,
+                    const size_t numNodes)
 {
     const auto& nodeIds = props.getPropertyRef<string_list>(PROPERTY_NODEIDS.name);
     if(nodeIds.size() != numNodes)
@@ -230,8 +245,8 @@ void checkNodeIds(const brayns::PropertyMap& props,
     }
 }
 
-void checkSimulation(const brayns::PropertyMap& props,
-                     const size_t numNodes)
+void __checkSimulation(const brayns::PropertyMap& props,
+                       const size_t numNodes)
 {
     const auto& simTypes = props.getPropertyRef<string_list>(PROPERTY_NODESIMULATIONTYPE.name);
     if(simTypes.size() != numNodes)
@@ -256,8 +271,8 @@ void checkSimulation(const brayns::PropertyMap& props,
     }
 }
 
-void checkVasculature(const brayns::PropertyMap& props,
-                      const size_t numNodes)
+void __checkVasculature(const brayns::PropertyMap& props,
+                        const size_t numNodes)
 {
     const auto& vascParts = props.getPropertyRef<string_list>(PROPERTY_VASCULATUREPARTS.name);
     if(vascParts.size() != numNodes)
@@ -274,9 +289,9 @@ void checkVasculature(const brayns::PropertyMap& props,
 /**
  * @brief Check correctness of input loader parameter and disk files
  */
-void checkParameters(const bbp::sonata::CircuitConfig& config,
-                     const brayns::PropertyMap& props,
-                     const brayns::PropertyMap& defaultProperties)
+void __checkParameters(const bbp::sonata::CircuitConfig& config,
+                       const brayns::PropertyMap& props,
+                       const brayns::PropertyMap& defaultProperties)
 {
     // CHECK THAT ALL THE PROPERTIES HAVE BEEN PROVIDED
     for(const auto& property : defaultProperties.getProperties())
@@ -305,17 +320,17 @@ void checkParameters(const bbp::sonata::CircuitConfig& config,
     }
 
     // CHECK NODESETS
-    checkNodeSets(config, props, numNodePopulations);
+    __checkNodeSets(config, props, numNodePopulations);
     // CHECK EDGES
-    checkEdges(config, props, numNodePopulations);
+    __checkEdges(config, props, numNodePopulations);
     // CHECK MORPHOLOGY PARTS
-    checkMorphologyParts(props, numNodePopulations);
+    __checkMorphologyParts(props, numNodePopulations);
     // CHECK NODE IDS
-    checkNodeIds(props, numNodePopulations);
+    __checkNodeIds(props, numNodePopulations);
     // CHECK REPORTS
-    checkSimulation(props, numNodePopulations);
+    __checkSimulation(props, numNodePopulations);
     // CHECK VASCULATURE
-    checkVasculature(props, numNodePopulations);
+    __checkVasculature(props, numNodePopulations);
 }
 
 /**
@@ -364,7 +379,10 @@ std::vector<std::vector<T>> parseStringList(const string_list& list, const char 
         for(size_t j = 0; j < tokenList.size(); ++j)
         {
             if(!tokenList[j].empty())
+            {
+                brayns::string_utils::trim(tokenList[j]);
                 dst[j] = convert<T>(tokenList[j]);
+            }
         }
     }
     return result;
@@ -377,7 +395,11 @@ std::vector<T> parseFlatStringList(const string_list& list)
     for(size_t i = 0; i < list.size(); ++i)
     {
         if(!list[i].empty())
-            result[i] = convert<T>(list[i]);
+        {
+            auto token = list[i];
+            brayns::string_utils::trim(token);
+            result[i] = convert<T>(token);
+        }
     }
     return result;
 }
@@ -440,9 +462,11 @@ brayns::PropertyMap SonataLoaderProperties::getPropertyList() noexcept
     props.setProperty(PROPERTY_EDGELOADMODES);
     props.setProperty(PROPERTY_EDGESIMULATIONPATHS);
     props.setProperty(PROPERTY_RADIUSMULT);
+    props.setProperty(PROPERTY_RADIUSOVERRIDE);
     props.setProperty(PROPERTY_NEURONPARTS);
     props.setProperty(PROPERTY_NEURONLOADMODE);
     props.setProperty(PROPERTY_VASCULATUREPARTS);
+    props.setProperty(PROPERTY_VASCULATURERADIIREPORT);
     return props;
 }
 
@@ -451,7 +475,8 @@ SonataLoaderProperties::checkAndParse(const std::string& path,
                                       const bbp::sonata::CircuitConfig& config,
                                       const brayns::PropertyMap& properties)
 {
-    checkParameters(config, properties, getPropertyList());
+    // Fast input check to avoid start loading process if problems are detected
+    __checkParameters(config, properties, getPropertyList());
 
     const auto& populationList =
             properties.getPropertyRef<string_list>(PROPERTY_NODEPOPULATIONS.name);
@@ -541,28 +566,32 @@ SonataLoaderProperties::checkAndParse(const std::string& path,
         pls.neurons.radiusMultiplier = morphologyRadiusMult[i];
         pls.vasculature.radiusMultiplier = morphologyRadiusMult[i];
 
+        pls.neurons.sections = NeuronSection::NONE;
         if(!morphologySections.empty())
         {
             const EnumWrapper<NeuronSection> neuronSections;
             for(const auto& part : morphologySections[i])
                 pls.neurons.sections |= neuronSections.fromString(part);
         }
-        else
-            pls.neurons.sections = NeuronSection::NONE;
 
         // If only soma requested, use primitive geometry
         const EnumWrapper<NeuronGeometryType> geomTypeEnum;
         pls.neurons.mode = pls.neurons.sections == NeuronSection::SOMA?
                     NeuronGeometryType::SAMPLES : geomTypeEnum.fromString(morphologyLoadMode[i]);
 
+        pls.vasculature.sections = VasculatureSection::NONE;
         if(!vasculatureSections.empty())
         {
             const EnumWrapper<VasculatureSection> vasculatureSection;
             for(const auto& part : vasculatureSections[i])
                 pls.vasculature.sections |= vasculatureSection.fromString(part);
         }
-        else
-            pls.vasculature.sections = VasculatureSection::NONE;
+
+        // Make sure enough info has been specified to avoid loading an empty model
+        __ensureMinimalSections(config,
+                                pls.neurons.sections,
+                                pls.vasculature.sections,
+                                pls.node.name);
 
         pls.vasculature.radiiReport = vasculatureRadiiReports[i];
     }

@@ -18,6 +18,7 @@
 
 #include "CircuitColorHandler.h"
 
+#include <brayns/common/utils/stringUtils.h>
 #include <brayns/engine/Material.h>
 
 #include <plugin/api/ColorUtils.h>
@@ -114,9 +115,11 @@ const std::vector<std::string>& CircuitColorHandler::getMethods() const noexcept
 const std::vector<std::string>&
 CircuitColorHandler::getMethodVariables(const std::string& method) const
 {
+    const auto lcm = brayns::string_utils::toLowercase(method);
+
     for(size_t i = 0; i < _methods.size(); ++i)
     {
-        if(method == _methods[i])
+        if(lcm == _methods[i])
         {
             auto& cache = _methodVariables[i];
             if(!cache.initialized)
@@ -166,12 +169,14 @@ void CircuitColorHandler::updateSingleColor(const brayns::Vector4f& color)
 
 void CircuitColorHandler::updateColor(const std::string& method, const ColorVariables& variables)
 {
-    auto it = std::find(_methods.begin(), _methods.end(), method);
+    const auto lcm = brayns::string_utils::toLowercase(method);
+
+    auto it = std::find(_methods.begin(), _methods.end(), lcm);
     if(it == _methods.end())
         throw std::invalid_argument("CircuitColorHandler: Unknown method '" + method
                                     + "' for model ID " + std::to_string(_model->getModelID()));
 
-    _updateColorImpl(method, variables);
+    _updateColorImpl(lcm, variables);
     _model->markModified();
 }
 

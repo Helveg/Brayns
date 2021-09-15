@@ -29,13 +29,13 @@ namespace sonataloader
 {
 namespace
 {
-constexpr char methodBySection[]        = "morphology_section";
+constexpr char methodBySection[]        = "morphology section";
 constexpr char methodByMorphology[]     = "morphology";
 constexpr char methodByLayer[]          = "layer";
-constexpr char methodByMorphClass[]     = "morph_class";
+constexpr char methodByMorphClass[]     = "morphology class";
 constexpr char methodByEType[]          = "etype";
 constexpr char methodByMType[]          = "mtype";
-constexpr char methodBySynapseClass[]   = "synapse_class";
+constexpr char methodBySynapseClass[]   = "synapse class";
 constexpr char methodByRegion[]         = "region";
 constexpr char methodByHemisphere[]     = "hemisphere";
 

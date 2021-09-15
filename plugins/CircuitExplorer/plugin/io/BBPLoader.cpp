@@ -30,6 +30,8 @@
 #include <plugin/io/bbploader/BBPLoaderProperties.h>
 #include <plugin/io/bbploader/CellLoader.h>
 #include <plugin/io/bbploader/SynapseLoader.h>
+#include <plugin/io/bbploader/colorhandlers/NeuronColorHandler.h>
+#include <plugin/io/bbploader/colorhandlers/SynapseColorHandler.h>
 #include <plugin/io/bbploader/simulation/CompartmentSimulation.h>
 #include <plugin/io/bbploader/simulation/SpikeSimulation.h>
 #include <plugin/io/util/ProgressReport.h>
@@ -101,15 +103,17 @@ inline brayns::ModelDescriptorPtr __loadSynapse(const std::string& path,
                                                 const bool afferent,
                                                 const std::vector<MorphologyInstancePtr>& cells,
                                                 ProgressReport& pr,
-                                                brayns::ModelPtr&& model)
+                                                brayns::ModelPtr&& model,
+                                                CircuitColorManager& colorManager)
 {
     const std::string msg = afferent? "Loading afferent synapses" : "Loading efferent synapses";
     auto aslpr = pr.nextSubProgress(msg, gids.size() * 2);
     const auto synapses = SynapseLoader::load(circuit, gids, afferent, aslpr);
+    std::vector<ElementMaterialMap::Ptr> synapseMatMap (gids.size());
     for(size_t i = 0; i < cells.size(); ++i)
     {
         synapses[i]->mapToCell(*cells[i]);
-        synapses[i]->addToModel(*model);
+        synapseMatMap[i] = synapses[i]->addToModel(*model);
         aslpr.tick();
     }
     model->updateBounds();
@@ -126,7 +130,28 @@ inline brayns::ModelDescriptorPtr __loadSynapse(const std::string& path,
         std::make_shared<brayns::ModelDescriptor>(std::move(model), "Synapses", path, metadata);
     modelDescriptor->setTransformation(transformation);
     modelDescriptor->setName(afferent? "Afferent synapses" : "Efferent synapses");
+
+    auto synapseColorHandler = std::make_unique<SynapseColorHandler>(modelDescriptor.get());
+    synapseColorHandler->setElements(std::vector<uint64_t>(gids.begin(), gids.end()),
+                                     std::move(synapseMatMap));
+    modelDescriptor->onRemoved([cmptr = &colorManager](const brayns::ModelDescriptor& m)
+    {
+        cmptr->unregisterHandler(m.getModelID());
+    });
+    colorManager.registerHandler(std::move(synapseColorHandler));
     return modelDescriptor;
+}
+
+inline std::string __getCircuitFilePath(const brion::BlueConfig& config)
+{
+    const auto csrc = config.getCircuitSource().getPath();
+    if(fs::exists(csrc))
+        return csrc;
+    const auto ssrc = config.getCellLibrarySource().getPath();
+    if(fs::exists(ssrc))
+        return ssrc;
+
+    return "";
 }
 }
 
@@ -253,8 +278,9 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     // CREATE MODEL DESCRIPTOR
     // -------------------------------------------------------------------------------------------
     auto amgpr = pr.nextSubProgress("Generating geometry", gids.size());
+    std::vector<ElementMaterialMap::Ptr> cellMatMap (gids.size());
     for(size_t i = 0; i < cells.size(); ++i)
-        cells[i]->addToModel(*cellModel);
+        cellMatMap[i] = cells[i]->addToModel(*cellModel);
     cellModel->updateBounds();
     if(simulation)
         CircuitExplorerMaterial::setSimulationColorEnabled(*cellModel, true);
@@ -277,11 +303,31 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     modelDescriptor->setTransformation(transformation);
     result.push_back(modelDescriptor);
 
+    // CREATE COLOR HANDLER
+    // -------------------------------------------------------------------------------------------
+    auto cellColorHandler = std::make_unique<NeuronColorHandler>(modelDescriptor.get(),
+                                                                 __getCircuitFilePath(config),
+                                                                 config.getCircuitPopulation());
+    cellColorHandler->setElements(std::vector<uint64_t>(gids.begin(), gids.end()),
+                                  std::move(cellMatMap));
+    modelDescriptor->onRemoved([cmptr = &_colorManager](const brayns::ModelDescriptor& m)
+    {
+        cmptr->unregisterHandler(m.getModelID());
+    });
+    _colorManager.registerHandler(std::move(cellColorHandler));
+
     // LOAD AFFERENT (IF REQUESTED)
     // -------------------------------------------------------------------------------------------
     if(loadConfig.loadAfferent)
     {
-        auto model = __loadSynapse(path, circuit, gids, true, cells, pr, _scene.createModel());
+        auto model = __loadSynapse(path,
+                                   circuit,
+                                   gids,
+                                   true,
+                                   cells,
+                                   pr,
+                                   _scene.createModel(),
+                                   _colorManager);
         result.push_back(model);
     }
 
@@ -289,7 +335,14 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     // -------------------------------------------------------------------------------------------
     if(loadConfig.loadEfferent)
     {
-        auto model = __loadSynapse(path, circuit, gids, false, cells, pr, _scene.createModel());
+        auto model = __loadSynapse(path,
+                                   circuit,
+                                   gids,
+                                   false,
+                                   cells,
+                                   pr,
+                                   _scene.createModel(),
+                                   _colorManager);
         result.push_back(model);
     }
 

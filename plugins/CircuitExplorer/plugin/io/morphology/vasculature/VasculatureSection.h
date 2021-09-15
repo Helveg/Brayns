@@ -56,10 +56,11 @@ inline VasculatureSection operator& (const VasculatureSection a,
                                            &static_cast<uint8_t>(b));
 }
 
-inline VasculatureSection operator&= (const VasculatureSection a,
-                                      const VasculatureSection b) noexcept
+inline VasculatureSection operator&= (VasculatureSection& a,
+                                      const VasculatureSection& b) noexcept
 {
-    return a & b;
+    a = a & b;
+    return a;
 }
 
 inline VasculatureSection operator| (const VasculatureSection a,
@@ -69,10 +70,11 @@ inline VasculatureSection operator| (const VasculatureSection a,
                                            | static_cast<uint8_t>(b));
 }
 
-inline VasculatureSection operator|= (const VasculatureSection a,
-                                      const VasculatureSection b) noexcept
+inline VasculatureSection operator|= (VasculatureSection& a,
+                                      const VasculatureSection& b) noexcept
 {
-    return a | b;
+    a = a | b;
+    return a;
 }
 
 template<>
@@ -125,6 +127,8 @@ EnumWrapper<VasculatureSection>::toString(
         tokens.emplace_back(ARTERIAL_CAPILLARY_NAME);
     if(static_cast<uint8_t>(type & Types::TRANSITIONAL))
         tokens.emplace_back(TRANSITIONAL_NAME);
+    if(static_cast<uint8_t>(type & Types::NONE) == 0)
+        tokens.emplace_back("none");
 
     return brayns::string_utils::join(tokens, ",");
 }
