@@ -23,6 +23,7 @@
 #include <brayns/pluginapi/ExtensionPlugin.h>
 
 #include <plugin/api/CircuitColorManager.h>
+#include <plugin/api/VasculatureRadiiSimulation.h>
 #include <plugin/api/CircuitExplorerParams.h>
 
 /**
@@ -61,7 +62,6 @@ private:
     brayns::Message _exportFramesToDisk(const ExportFramesToDisk& payload);
     void _doExportFrameToDisk();
     FrameExportProgress _getFrameExportProgress();
-    ExportLayerToDiskResult _exportLayerToDisk(const ExportLayerToDisk& payload);
     brayns::Message _makeMovie(const MakeMovieParameters& params);
 
     // Anterograde tracing
@@ -100,4 +100,5 @@ private:
     std::string _exportFrameErrorMessage;
 
     CircuitColorManager _colorManager;
+    VasculatureRadiiSimulation _radiiManager;
 };

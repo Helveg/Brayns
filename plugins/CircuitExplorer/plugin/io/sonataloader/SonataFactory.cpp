@@ -34,6 +34,7 @@
 #include <plugin/io/sonataloader/simulations/reports/EdgeCompartmentLoader.h>
 #include <plugin/io/sonataloader/simulations/reports/NodeCompartmentLoader.h>
 #include <plugin/io/sonataloader/simulations/reports/NodeSpikeLoader.h>
+#include <plugin/io/sonataloader/simulations/reports/VasculatureReportLoader.h>
 
 namespace sonataloader
 {
@@ -56,5 +57,8 @@ SonataFactories::SonataFactories()
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::COMPARTMENT);
     _simulations.registerProduct<NodeSpikeLoader>(SimulationType::SPIKES);
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::SUMMATION);
+    _simulations.registerProduct<VasculatureReportLoader>(SimulationType::BLOODFLOW_PRESSURE);
+    _simulations.registerProduct<VasculatureReportLoader>(SimulationType::BLOODFLOW_SPEED);
+    _simulations.registerProduct<VasculatureRadiiReportLoader>(SimulationType::BLOODFLOW_RADII);
 }
 }

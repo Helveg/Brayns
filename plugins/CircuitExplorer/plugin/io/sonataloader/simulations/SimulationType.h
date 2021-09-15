@@ -34,18 +34,22 @@ enum class SimulationType : uint8_t
     COMPARTMENT = 2,
     SUMMATION = 3,
     SYNAPSE = 4,
-    BLOODFLOW = 5
+    BLOODFLOW_PRESSURE = 5,
+    BLOODFLOW_SPEED = 6,
+    BLOODFLOW_RADII = 7
 };
 }
 
 namespace
 {
-constexpr char NONE_NAME[]          = "none";
-constexpr char SPIKES_NAME[]        = "spikes";
-constexpr char COMPARTMENT_NAME[]   = "compartment";
-constexpr char SUMMATION_NAME[]     = "summation";
-constexpr char SYNAPSE_NAME[]       = "synapse";
-constexpr char BLOODFLOW_NAME[]     = "bloodflow";
+constexpr char NONE_NAME[]                  = "none";
+constexpr char SPIKES_NAME[]                = "spikes";
+constexpr char COMPARTMENT_NAME[]           = "compartment";
+constexpr char SUMMATION_NAME[]             = "summation";
+constexpr char SYNAPSE_NAME[]               = "synapse";
+constexpr char BLOODFLOW_PRESSURE_NAME[]    = "bloodflow pressure";
+constexpr char BLOODFLOW_SPEED_NAME[]       = "bloodflow speed";
+constexpr char BLOODFLOW_RADII_NAME[]       = "bloodflow radii";
 }
 
 template<>
@@ -53,7 +57,8 @@ inline std::vector<std::string>
 EnumWrapper<sonataloader::SimulationType>::toStringList() const noexcept
 {
     return {NONE_NAME, SPIKES_NAME, COMPARTMENT_NAME,
-            SUMMATION_NAME, SYNAPSE_NAME, BLOODFLOW_NAME};
+            SUMMATION_NAME, SYNAPSE_NAME, BLOODFLOW_PRESSURE_NAME,
+            BLOODFLOW_SPEED_NAME, BLOODFLOW_RADII_NAME};
 }
 
 template<>
@@ -70,8 +75,12 @@ EnumWrapper<sonataloader::SimulationType>::fromString(const std::string& src) co
         return Types::SUMMATION;
     else if(src == SYNAPSE_NAME)
         return Types::SYNAPSE;
-    else if(src == BLOODFLOW_NAME)
-        return Types::BLOODFLOW;
+    else if(src == BLOODFLOW_PRESSURE_NAME)
+        return Types::BLOODFLOW_PRESSURE;
+    else if(src == BLOODFLOW_SPEED_NAME)
+        return Types::BLOODFLOW_SPEED;
+    else if(src == BLOODFLOW_RADII_NAME)
+        return Types::BLOODFLOW_RADII;
     else if(src == NONE_NAME)
         return Types::NONE;
 
@@ -91,8 +100,12 @@ EnumWrapper<sonataloader::SimulationType>::toString(
         return SUMMATION_NAME;
     else if(type == Types::SYNAPSE)
         return SYNAPSE_NAME;
-    else if(type == Types::BLOODFLOW)
-        return BLOODFLOW_NAME;
+    else if(type == Types::BLOODFLOW_PRESSURE)
+        return BLOODFLOW_PRESSURE_NAME;
+    else if(type == Types::BLOODFLOW_SPEED)
+        return BLOODFLOW_SPEED_NAME;
+    else if(type == Types::BLOODFLOW_RADII)
+        return BLOODFLOW_RADII_NAME;
     else if(type == Types::NONE)
         return NONE_NAME;
 

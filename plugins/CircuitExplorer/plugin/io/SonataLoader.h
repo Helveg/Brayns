@@ -20,6 +20,7 @@
 
 #include <brayns/common/loader/Loader.h>
 
+#include <plugin/api/VasculatureRadiiSimulation.h>
 #include <plugin/api/CircuitColorManager.h>
 
 /**
@@ -31,7 +32,9 @@ public:
     /**
      * @brief Constructor
      */
-    SonataLoader(brayns::Scene& scene, CircuitColorManager& colorManager);
+    SonataLoader(brayns::Scene& scene,
+                 CircuitColorManager& colorManager,
+                 VasculatureRadiiSimulation& radiiHandler);
 
     /**
      * @brief getSupportedExtensions returns a list with supported file extensions
@@ -74,4 +77,5 @@ public:
 
 private:
     CircuitColorManager& _colorManager;
+    VasculatureRadiiSimulation& _radiiSimulationHandler;
 };

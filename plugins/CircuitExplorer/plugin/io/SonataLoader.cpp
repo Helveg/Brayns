@@ -94,9 +94,12 @@ inline brayns::ModelDescriptorPtr createModelDescriptor(const std::string& name,
 } // namespace
 
 
-SonataLoader::SonataLoader(brayns::Scene& scene, CircuitColorManager& colorManager)
+SonataLoader::SonataLoader(brayns::Scene& scene,
+                           CircuitColorManager& colorManager,
+                           VasculatureRadiiSimulation& radiiHandler)
  : brayns::Loader(scene)
  , _colorManager(colorManager)
+ , _radiiSimulationHandler(radiiHandler)
 {
     PLUGIN_INFO << "Registering loader: " << getName() << std::endl;
 }
@@ -226,11 +229,19 @@ SonataLoader::importFromFile(const std::string& path,
         np.nextSubProgress(node.name + ": Generating color mapping");
         auto nodeColorHandler = nodeLoader->createColorHandler(nodeModelPtr, path);
         nodeColorHandler->setElements(nodeIDs, std::move(materialMaps));
-        nodeModelPtr->onRemoved([cmPtr = &_colorManager](const brayns::ModelDescriptor& m)
+        _colorManager.registerHandler(std::move(nodeColorHandler));
+
+        // Handle the special case of vasculature radii report
+        // TODO: After engine refactoring, this should not be necessary
+        if(simulation && loadConfig.node.simulationType == SimulationType::BLOODFLOW_RADII)
+            _radiiSimulationHandler.registerModel(nodeModelPtr);
+
+        nodeModelPtr->onRemoved([cmPtr = &_colorManager,
+                                 rPtr = &_radiiSimulationHandler](const brayns::ModelDescriptor& m)
         {
             cmPtr->unregisterHandler(m.getModelID());
+            rPtr->unregisterModel(m.getModelID());
         });
-        _colorManager.registerHandler(std::move(nodeColorHandler));
 
         total += chunk;
         PLUGIN_INFO << "Loaded node population " << node.name << std::endl;

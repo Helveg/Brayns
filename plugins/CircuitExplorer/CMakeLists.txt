@@ -44,6 +44,7 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/api/CircuitColorManager.cpp
     plugin/api/ColorUtils.cpp
     plugin/api/MaterialUtils.cpp
+    plugin/api/VasculatureRadiiSimulation.cpp
     plugin/io/BBPLoader.cpp
     plugin/io/NeuronMorphologyLoader.cpp
     plugin/io/SonataLoader.cpp
@@ -90,9 +91,11 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/sonataloader/populations/nodes/colorhandlers/VasculatureColorHandler.cpp
     plugin/io/sonataloader/simulations/handlers/SonataReportHandler.cpp
     plugin/io/sonataloader/simulations/handlers/SonataSpikeHandler.cpp
+    plugin/io/sonataloader/simulations/handlers/VasculatureRadiiHandler.cpp
     plugin/io/sonataloader/simulations/reports/EdgeCompartmentLoader.cpp
     plugin/io/sonataloader/simulations/reports/NodeCompartmentLoader.cpp
     plugin/io/sonataloader/simulations/reports/NodeSpikeLoader.cpp
+    plugin/io/sonataloader/simulations/reports/VasculatureReportLoader.cpp
     plugin/io/synapse/groups/EndFootGroup.cpp
     plugin/io/synapse/groups/OldSurfaceSynapseGroup.cpp
     plugin/io/synapse/groups/SurfaceSynapseGroup.cpp
@@ -111,6 +114,7 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/api/Log.h
     plugin/api/MaterialEnums.h
     plugin/api/MaterialUtils.h
+    plugin/api/VasculatureRadiiSimulation.h
     plugin/io/BBPLoader.h
     plugin/io/NeuronMorphologyLoader.h
     plugin/io/SonataLoader.h
@@ -174,9 +178,11 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonataloader/simulations/SimulationType.h
     plugin/io/sonataloader/simulations/handlers/SonataReportHandler.h
     plugin/io/sonataloader/simulations/handlers/SonataSpikeHandler.h
+    plugin/io/sonataloader/simulations/handlers/VasculatureRadiiHandler.h
     plugin/io/sonataloader/simulations/reports/EdgeCompartmentLoader.h
     plugin/io/sonataloader/simulations/reports/NodeCompartmentLoader.h
     plugin/io/sonataloader/simulations/reports/NodeSpikeLoader.h
+    plugin/io/sonataloader/simulations/reports/VasculatureReportLoader.h
     plugin/io/synapse/SynapseGroup.h
     plugin/io/synapse/SynapseMaterialMap.h
     plugin/io/synapse/groups/EndFootGroup.h

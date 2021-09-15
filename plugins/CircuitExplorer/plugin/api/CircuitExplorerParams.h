@@ -216,24 +216,6 @@ struct FrameExportProgress : public brayns::Message
                                     "frames to disk request")
 };
 
-struct ExportLayerToDisk : public brayns::Message
-{
-    MESSAGE_BEGIN(ExportLayerToDisk)
-    MESSAGE_ENTRY(std::string, path, "Path where to store the frames")
-    MESSAGE_ENTRY(std::string, name, "Name to give to the layer frames")
-    MESSAGE_ENTRY(uint32_t, startFrame, "The frame number of the first frame to store "
-                                        "(For instance: name00025.png")
-    MESSAGE_ENTRY(uint32_t, framesCount, "Number of frames to store, starting at startFrame")
-    MESSAGE_ENTRY(std::string, data, "Base64 layer image data to store on every frame")
-};
-
-struct ExportLayerToDiskResult : public brayns::Message
-{
-    MESSAGE_BEGIN(ExportLayerToDiskResult)
-    MESSAGE_ENTRY(std::vector<uint32_t>, frames, "List of frames that were successfully stored"
-                                                 " from the last export layer to disk request")
-};
-
 struct MakeMovieParameters : public brayns::Message
 {
     MESSAGE_BEGIN(MakeMovieParameters)
@@ -247,7 +229,6 @@ struct MakeMovieParameters : public brayns::Message
                                                 " Must include filename and extension")
     MESSAGE_ENTRY(bool, eraseFrames, "Wether to clean up the frame image files after generating"
                                      " the video file")
-    MESSAGE_ENTRY(std::vector<std::string>, layers, "List of layer names to compose in the video. Layer name \"movie\" must be always present")
 };
 
 struct AddGrid : public brayns::Message

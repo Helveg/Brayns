@@ -30,12 +30,7 @@
 #include <plugin/movie/MovieMaker.h>
 
 #include <brayns/common/ActionInterface.h>
-#include <brayns/common/Progress.h>
-#include <brayns/common/Timer.h>
-#include <brayns/common/geometry/Streamline.h>
 #include <brayns/common/simulation/AbstractSimulationHandler.h>
-#include <brayns/common/utils/base64/base64.h>
-#include <brayns/common/utils/imageUtils.h>
 #include <brayns/common/utils/stringUtils.h>
 #include <brayns/engine/Camera.h>
 #include <brayns/engine/Engine.h>
@@ -46,8 +41,6 @@
 #include <brayns/engine/Scene.h>
 #include <brayns/parameters/ParametersManager.h>
 #include <brayns/pluginapi/PluginAPI.h>
-
-#include <brion/brion.h>
 
 #include <algorithm>
 #include <cstdio>
@@ -302,7 +295,7 @@ void CircuitExplorerPlugin::init()
 
     registry.registerLoader(std::make_unique<BBPLoader>(scene, _colorManager));
     registry.registerLoader(std::make_unique<NeuronMorphologyLoader>(scene));
-    registry.registerLoader(std::make_unique<SonataLoader>(scene, _colorManager));
+    registry.registerLoader(std::make_unique<SonataLoader>(scene, _colorManager, _radiiManager));
     registry.registerLoader(std::make_unique<SonataNGVLoader>(scene, _colorManager));
 
     auto actionInterface = _api->getActionInterface();
@@ -411,19 +404,6 @@ void CircuitExplorerPlugin::init()
             [&](void) -> FrameExportProgress {
                 return _getFrameExportProgress();
             });
-
-        actionInterface
-            ->registerRequest<ExportLayerToDisk, ExportLayerToDiskResult>(
-                {"export-layer-to-disk",
-                 "Export 1 or various layers to disk to be used in composition "
-                 "when generating a"
-                 " movie",
-                 "ExportLayerToDisk",
-                 "Information to store the layer on disk, and image data to "
-                 "store in base64 format"},
-                [&](const ExportLayerToDisk& s) {
-                    return _exportLayerToDisk(s);
-                });
 
         actionInterface->registerRequest<MakeMovieParameters, brayns::Message>(
             {"make-movie",
@@ -605,6 +585,9 @@ void CircuitExplorerPlugin::preRender()
                 ai[_frameNumber]);
         }
     }
+
+    // Update any vasculature model with a radii report simulation
+    _radiiManager.update();
 }
 
 void CircuitExplorerPlugin::postRender()
@@ -1392,46 +1375,6 @@ FrameExportProgress CircuitExplorerPlugin::_getFrameExportProgress()
         result.setError(1, _exportFrameErrorMessage);
     else
         result.setError(0, "");
-    return result;
-}
-
-ExportLayerToDiskResult CircuitExplorerPlugin::_exportLayerToDisk(
-    const ExportLayerToDisk& payload)
-{
-    ExportLayerToDiskResult result;
-
-    const uint32_t end = payload.startFrame + payload.framesCount;
-    for (uint32_t i = payload.startFrame; i < end; i++)
-    {
-        char frame[7];
-        sprintf(frame, "%05d", i);
-        const std::string frameFileName(frame);
-        const std::string slash =
-            payload.path.at(payload.path.length() - 1) == '/' ? "" : "/";
-        const std::string srcFramePath =
-            payload.path + slash + frameFileName + ".png";
-
-        std::ifstream testSourceFrame(srcFramePath);
-        const bool state = testSourceFrame.good();
-        testSourceFrame.close();
-
-        // Do not write layer if the corresponding frame does not exists
-        if (!state)
-            continue;
-
-        const std::string layerPath =
-            payload.path + slash + payload.name + frameFileName + ".png";
-        const std::string decodedImage = base64_decode(payload.data);
-
-        std::ofstream outFileWriter(layerPath,
-                                    std::ofstream::out | std::ofstream::trunc);
-        outFileWriter << decodedImage;
-        outFileWriter.flush();
-        outFileWriter.close();
-
-        result.frames.push_back(i);
-    }
-
     return result;
 }
 
