@@ -44,7 +44,6 @@ VasculatureReportLoader::loadMapping(const bbp::sonata::Selection& s) const
     std::vector<NodeSimulationMapping> mapping (sortedCompartmentsSize.size());
     auto it = sortedCompartmentsSize.begin();
     size_t index = 0;
-    size_t prevOffset = 0;
     while(it != sortedCompartmentsSize.end())
     {
         mapping[index].globalOffset = it->second;

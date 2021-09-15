@@ -44,8 +44,8 @@ void PrimitiveNeuronInstance::mapSimulation(const size_t globalOffset,
         const auto& segments = geomSection.second;
         // No section level information (soma report, spike simulation, etc.)
         // or dealing with soma
-        if(geomSection.first == -1 || sectionOffsets.empty()
-                || geomSection.first > sectionOffsets.size() - 1)
+        if(geomSection.first <= -1 || sectionOffsets.empty()
+                || static_cast<size_t>(geomSection.first) > sectionOffsets.size() - 1)
         {
             for(const auto& segment : segments)
                 _setSimulationOffset(_data->geometries[segment], globalOffset);
@@ -158,7 +158,7 @@ PrimitiveNeuronInstance::getSegmentSimulationOffset(const int32_t section, const
         return _spheres[geom.index].userData;
     case PrimitiveType::CYLINDER:
         return _cylinders[geom.index].userData;
-    case PrimitiveType::CONE:
+    default:
         return _cones[geom.index].userData;
     }
 }
@@ -172,13 +172,13 @@ PrimitiveNeuronInstance::_getGeometryP0(const PrimitiveGeometry& g) const noexce
         return _spheres[g.index].center;
     case PrimitiveType::CYLINDER:
         return _cylinders[g.index].center;
-    case PrimitiveType::CONE:
+    default:
         return _cones[g.index].center;
-    }
-
-    throw std::runtime_error("PrimitiveType error");
+   }
 }
 
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wterminate"
 const brayns::Vector3f&
 PrimitiveNeuronInstance::_getGeometryP1(const PrimitiveGeometry& g) const noexcept
 {
@@ -188,12 +188,11 @@ PrimitiveNeuronInstance::_getGeometryP1(const PrimitiveGeometry& g) const noexce
         return _spheres[g.index].center;
     case PrimitiveType::CYLINDER:
         return _cylinders[g.index].up;
-    case PrimitiveType::CONE:
+    default:
         return _cones[g.index].up;
     }
-
-    throw std::runtime_error("PrimitiveType error");
 }
+//#pragma GCC diagnostic pop
 
 void PrimitiveNeuronInstance::_setSimulationOffset(const PrimitiveGeometry& geom,
                                                    const uint64_t offset) noexcept

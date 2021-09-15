@@ -45,23 +45,23 @@ void SynapseAstrocyteGroup::mapToCell(const MorphologyInstance& cell)
 
             float totalDistance = 0.f;
             std::vector<float> localDistances (segmentCount, 0.f);
-            for(size_t i = 0; i < segmentCount; ++i)
+            for(size_t j = 0; j < segmentCount; ++j)
             {
-                const auto points = cell.getSegment(section, i);
+                const auto points = cell.getSegment(section, j);
                 const auto dist = glm::length(*points.first - *points.second);
                 totalDistance += dist;
-                localDistances[i] = dist;
+                localDistances[j] = dist;
             }
             const float invTotalDist = 1.f / totalDistance;
 
             float traversedDistance = 0.f;
-            for(size_t i = 0; i < localDistances.size(); ++i)
+            for(size_t j = 0; j < localDistances.size(); ++j)
             {
-                traversedDistance += localDistances[i];
+                traversedDistance += localDistances[j];
                 const float localNorm = traversedDistance * invTotalDist;
                 if(localNorm >= distance)
                 {
-                    const auto points = cell.getSegment(section, i);
+                    const auto points = cell.getSegment(section, j);
                     const auto point = glm::lerp(*points.first,
                                                  *points.second,
                                                  distance / localNorm);
@@ -70,7 +70,7 @@ void SynapseAstrocyteGroup::mapToCell(const MorphologyInstance& cell)
                     // simulation report. If there is a synapse report, it will overwrite
                     // this value
                     _geometry.back().userData =
-                            cell.getSegmentSimulationOffset(section, i);
+                            cell.getSegmentSimulationOffset(section, j);
                     break;
                 }
             }

@@ -30,6 +30,8 @@ public:
     {
     }
 
+    virtual ~VasculatureReportLoader() = default;
+
     std::vector<NodeSimulationMapping> loadMapping(const bbp::sonata::Selection&) const final;
 
     virtual brayns::AbstractSimulationHandlerPtr

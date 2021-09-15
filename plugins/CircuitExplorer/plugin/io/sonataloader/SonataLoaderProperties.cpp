@@ -348,11 +348,6 @@ std::string convert(const std::string& src)
     return src;
 }
 template<>
-uint8_t convert(const std::string& src)
-{
-    return static_cast<uint8_t>(std::stoul(src));
-}
-template<>
 uint64_t convert(const std::string& src)
 {
     return static_cast<uint64_t>(std::stoull(src));

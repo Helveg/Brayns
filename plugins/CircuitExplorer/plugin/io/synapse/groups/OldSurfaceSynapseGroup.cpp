@@ -42,7 +42,6 @@ void OldSurfaceSynapseGroup::mapToCell(const MorphologyInstance& cell)
                 continue;
 
             const auto& surfPos = _positions[j];
-            size_t closest = 0;
             for(size_t i = 0; i < segmentCount; ++i)
             {
                 const auto segment = cell.getSegment(section, i);

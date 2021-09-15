@@ -62,9 +62,9 @@ public:
      * @brief importFromBlob imports models from a byte blob. NOT SUPPORTED
      */
     std::vector<brayns::ModelDescriptorPtr>
-    importFromBlob(brayns::Blob&& blob,
-                   const brayns::LoaderProgress& callback,
-                   const brayns::PropertyMap& properties) const final;
+    importFromBlob(brayns::Blob&&,
+                   const brayns::LoaderProgress&,
+                   const brayns::PropertyMap&) const final;
 
     /**
      * @brief importFromFile imports models from a file given by a path

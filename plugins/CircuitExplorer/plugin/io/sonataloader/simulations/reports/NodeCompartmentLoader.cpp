@@ -55,7 +55,7 @@ NodeCompartmentLoader::loadMapping(const bbp::sonata::Selection& s) const
 
     // Compact mapping from libsonata
     std::map<uint64_t, std::vector<uint16_t>> sortedCompartmentsSize;
-    int32_t lastSection = -1;
+    uint32_t lastSection = std::numeric_limits<uint32_t>::max();
     uint64_t lastNode = std::numeric_limits<uint64_t>::max();
     for(const auto& key : rawMapping)
     {

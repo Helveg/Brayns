@@ -41,7 +41,7 @@ public:
         return {};
     }
 
-    std::vector<std::string> _getMethodVariablesImpl(const std::string& method) const final
+    std::vector<std::string> _getMethodVariablesImpl(const std::string&) const final
     {
         return {};
     }
@@ -50,7 +50,7 @@ public:
 
     void _updateSingleColorImpl(const brayns::Vector4f& color) final;
 
-    void _updateColorImpl(const std::string& method, const ColorVariables& variables) final
+    void _updateColorImpl(const std::string&, const ColorVariables&) final
     {
     }
 

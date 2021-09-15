@@ -46,8 +46,7 @@ public:
 private:
     const float _transition;
     const std::shared_ptr<brain::SpikeReportReader> _report;
-    bool _ready {false};
-
     std::unordered_map<uint64_t, uint64_t> _gidMap;
+    bool _ready {false};
 };
 }

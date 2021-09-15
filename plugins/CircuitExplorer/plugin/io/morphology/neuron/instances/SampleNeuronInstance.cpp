@@ -40,8 +40,8 @@ void SampleNeuronInstance::mapSimulation(const size_t globalOffset,
         const auto& segments = geomSection.second;
         // No section level information (soma report, spike simulation, etc.)
         // or dealing with soma
-        if(geomSection.first == -1 || sectionOffsets.empty()
-                || geomSection.first > sectionOffsets.size() - 1)
+        if(geomSection.first <= -1 || sectionOffsets.empty()
+                || static_cast<size_t>(geomSection.first) > sectionOffsets.size() - 1)
         {
             for(const auto& segment : segments)
                 _samples[segment].userData = globalOffset;

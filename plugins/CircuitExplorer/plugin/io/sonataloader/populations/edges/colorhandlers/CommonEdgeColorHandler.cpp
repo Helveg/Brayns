@@ -101,7 +101,7 @@ CommonEdgeColorHandler::CommonEdgeColorHandler(brayns::ModelDescriptor* model,
 {
 }
 
-void CommonEdgeColorHandler::_setElementsImpl(const std::vector<uint64_t>& ids,
+void CommonEdgeColorHandler::_setElementsImpl(const std::vector<uint64_t>&,
                                               std::vector<ElementMaterialMap::Ptr>&& elements)
 {
     // We get the edges grouped by the node to which they belong.
@@ -180,7 +180,7 @@ CommonEdgeColorHandler::_getMethodVariablesImpl(const std::string& method) const
 }
 
 void
-CommonEdgeColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>& colorMap)
+CommonEdgeColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>&)
 {
     ColorRoulette r;
     for(const auto& group : _elements)

@@ -23,7 +23,7 @@
 
 namespace sonataloader
 {
-void EndFootColorHandler::_setElementsImpl(const std::vector<uint64_t>& ids,
+void EndFootColorHandler::_setElementsImpl(const std::vector<uint64_t>&,
                                            std::vector<ElementMaterialMap::Ptr>&& elements)
 {
     _materials.reserve(elements.size());
@@ -36,7 +36,7 @@ void EndFootColorHandler::_setElementsImpl(const std::vector<uint64_t>& ids,
 }
 
 void
-EndFootColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>& colorMap)
+EndFootColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>&)
 {
     ColorRoulette r;
     for(const auto matId : _materials)

@@ -45,6 +45,7 @@ constexpr char methodByMorph[]   = "morphology name";
 class CircuitAccessor
 {
 public:
+    virtual ~CircuitAccessor() = default;
     virtual std::vector<std::string> getLayers(const brain::GIDSet& gids) const = 0;
     virtual std::vector<std::string> getETypes(const brain::GIDSet& gids) const = 0;
     virtual std::vector<std::string> getMTypes(const brain::GIDSet& gids) const = 0;
@@ -145,7 +146,7 @@ public:
     std::vector<std::string> getLayers(const brain::GIDSet& gids) const final
     {
         const auto range = _getRange(gids);
-        const auto result = _arrange(_circuit->getLayers(range), range, gids);
+        const auto result = _arrange(_circuit->getLayers(range), gids);
         if(result.empty())
             PLUGIN_WARN << "GenericCircuit: No layer data found" << std::endl;
         return result;
@@ -154,7 +155,7 @@ public:
     std::vector<std::string> getETypes(const brain::GIDSet& gids) const final
     {
         const auto range = _getRange(gids);
-        const auto result = _arrange(_circuit->getEtypes(range), range, gids);
+        const auto result = _arrange(_circuit->getEtypes(range), gids);
         if(result.empty())
             PLUGIN_WARN << "GenericCircuit: No e-type data found" << std::endl;
         return result;
@@ -163,7 +164,7 @@ public:
     std::vector<std::string> getMTypes(const brain::GIDSet& gids) const final
     {
         const auto range = _getRange(gids);
-        const auto result = _arrange(_circuit->getMtypes(range), range, gids);
+        const auto result = _arrange(_circuit->getMtypes(range), gids);
         if(result.empty())
             PLUGIN_WARN << "GenericCircuit: No m-type data found" << std::endl;
         return result;
@@ -172,7 +173,7 @@ public:
     std::vector<std::string> getMorphologyNames(const brain::GIDSet& gids) const final
     {
         const auto range = _getRange(gids);
-        const auto result = _arrange(_circuit->getMorphologies(range), range, gids);
+        const auto result = _arrange(_circuit->getMorphologies(range), gids);
         if(result.empty())
             PLUGIN_WARN << "GenericCircuit: No morphology name data found" << std::endl;
         return result;
@@ -188,7 +189,6 @@ private:
     }
 
     std::vector<std::string> _arrange(const std::vector<std::string>& src,
-                                      const MVD::Range& range,
                                       const brain::GIDSet& gids) const
     {
         if(src.empty())
@@ -306,17 +306,21 @@ void NeuronColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::V
         size_t index = 0;
         while(it != colorMap.end() && idIt != _gids.end())
         {
-            while(it->first != *idIt && idIt != _gids.end())
+            const auto id = it->first;
+            if(id > *_gids.rbegin())
+                throw std::invalid_argument("Requested coloring GID '" + std::to_string(id)
+                                            + "' is beyond the highest GID loaded '"
+                                            + std::to_string(*_gids.rbegin()) + "'");
+
+            while(id > *idIt && idIt != _gids.end())
             {
                 ++idIt;
                 ++index;
             }
-            if(index >= _cells.size())
-                throw std::invalid_argument("Requested coloring GID '" + std::to_string(it->first)
-                                            + "' is beyond the highest GID loaded '"
-                                            + std::to_string(*_gids.rbegin()) + "'");
 
-            _cells[index]->setColor(_model, it->second);
+            if(id == *idIt)
+                _cells[index]->setColor(_model, it->second);
+
             ++it;
         }
     }

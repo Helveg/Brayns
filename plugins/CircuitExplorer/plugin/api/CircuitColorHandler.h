@@ -37,6 +37,8 @@ class ElementMaterialMap
 public:
     using Ptr = std::unique_ptr<ElementMaterialMap>;
 
+    virtual ~ElementMaterialMap() = default;
+
     virtual void setColor(brayns::ModelDescriptor* model,
                           const brayns::Vector4f& color) = 0;
 
@@ -67,6 +69,8 @@ class CircuitColorHandler
 {
 public:
     CircuitColorHandler(brayns::ModelDescriptor* model);
+
+    virtual ~CircuitColorHandler() = default;
 
     /**
      * @brief initializeMethodInfo calls the subclasses methods to fill the cache of

@@ -97,9 +97,9 @@ brayns::PropertyMap SonataNGVLoader::getProperties() const
 }
 
 std::vector<brayns::ModelDescriptorPtr>
-SonataNGVLoader::importFromBlob(brayns::Blob&& blob,
-                                const brayns::LoaderProgress& callback,
-                                const brayns::PropertyMap& properties) const
+SonataNGVLoader::importFromBlob(brayns::Blob&&,
+                                const brayns::LoaderProgress&,
+                                const brayns::PropertyMap&) const
 {
     throw std::runtime_error("SonataNGVLoader: Import from blob not supported");
 }

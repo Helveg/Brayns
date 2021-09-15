@@ -37,6 +37,8 @@ public:
         std::vector<uint16_t> compartments;
     };
 
+    virtual ~Simulation() = default;
+
     virtual const brain::GIDSet& getReportGids() const = 0;
     virtual std::vector<CellMapping> getMapping(const brain::GIDSet& inputGids) const = 0;
     virtual brayns::AbstractSimulationHandlerPtr createHandler() const = 0;

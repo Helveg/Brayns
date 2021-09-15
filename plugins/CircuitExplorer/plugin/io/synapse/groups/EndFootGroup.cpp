@@ -21,7 +21,7 @@
 #include <plugin/api/MaterialUtils.h>
 #include <plugin/io/synapse/SynapseMaterialMap.h>
 
-void EndFootGroup::addSynapse(const uint64_t id,
+void EndFootGroup::addSynapse(const uint64_t,
                               brayns::TriangleMesh&& endFootMesh)
 {
     _meshes.emplace_back(std::move(endFootMesh));

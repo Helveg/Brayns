@@ -46,8 +46,8 @@ EdgePopulationColorHandler::EdgePopulationColorHandler(brayns::ModelDescriptor* 
                                                        const std::string& population,
                                                        const bool afferent)
  : PopulationColorHandler(model, configPath, population)
- , _nodePopulation(__getNodePopulation(_config, population, afferent))
  , _afferent(afferent)
+ , _nodePopulation(__getNodePopulation(_config, population, afferent))
 {
 }
 }

@@ -40,17 +40,17 @@ public:
                         const VasculatureSection sectionType);
 
     void mapSimulation(const size_t globalOffset,
-                       const std::vector<uint16_t>& sectionOffsets,
-                       const std::vector<uint16_t>& sectionCompartments) final;
+                       const std::vector<uint16_t>&,
+                       const std::vector<uint16_t>&) final;
 
     ElementMaterialMap::Ptr addToModel(brayns::Model& model) const final;
 
-    size_t getSectionSegmentCount(const int32_t section) const final;
+    size_t getSectionSegmentCount(const int32_t) const final;
 
     MorphologyInstance::SegmentPoints
-    getSegment(const int32_t section, const uint32_t segment) const final;
+    getSegment(const int32_t, const uint32_t) const final;
 
-    uint64_t getSegmentSimulationOffset(const int32_t section, const uint32_t segment) const final;
+    uint64_t getSegmentSimulationOffset(const int32_t, const uint32_t) const final;
 
 private:
     brayns::SDFGeometry _geometry;

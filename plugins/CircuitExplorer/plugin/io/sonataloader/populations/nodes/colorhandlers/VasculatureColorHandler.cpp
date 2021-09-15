@@ -55,7 +55,7 @@ std::vector<std::string> VasculatureColorHandler::_getMethodsImpl() const
 }
 
 std::vector<std::string>
-VasculatureColorHandler::_getMethodVariablesImpl(const std::string& method) const
+VasculatureColorHandler::_getMethodVariablesImpl(const std::string&) const
 {
     return EnumWrapper<VasculatureSection>().toStringList();
 }
@@ -70,16 +70,17 @@ VasculatureColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::V
         while(it != colorMap.end() && i < _ids.size())
         {
             const auto id = it->first;
+            if(id > _ids.back())
+                throw std::invalid_argument("Requested coloring ID '" + std::to_string(id)
+                                            + "' is beyond the highest ID loaded '"
+                                            + std::to_string(_ids.back()) + "'");
+
             while(_ids[i] < id && i < _ids.size())
                 ++i;
 
             if(_ids[i] == id)
                 _elements[i]->setColor(_model, it->second);
-            else
-                throw std::invalid_argument("NeuronColorHandler: Could not set color by ID: ID '"
-                                            + std::to_string(id) + "' not found in circuit");
 
-            ++i;
             ++it;
         }
     }
@@ -97,8 +98,7 @@ void VasculatureColorHandler::_updateSingleColorImpl(const brayns::Vector4f& col
         element->setColor(_model, color);
 }
 
-void VasculatureColorHandler::_updateColorImpl(const std::string& method,
-                                               const ColorVariables& variables)
+void VasculatureColorHandler::_updateColorImpl(const std::string&, const ColorVariables& variables)
 {
     if(!variables.empty())
     {

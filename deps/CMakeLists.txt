@@ -78,6 +78,9 @@ endif()
 # --------------------------------------------------------------------------------
 # sonata (which also brings HighFive)
 # --------------------------------------------------------------------------------
+common_find_package(sonata)
+common_find_package(HighFive)
+common_find_package(nlohmann_json)
 if(NOT sonata_FOUND AND NOT TARGET sonata::sonata_shared)
     message(STATUS "Gathering sonata from submodules")
     # Sonata links against gcov, but on Apple this library is not included
@@ -112,6 +115,7 @@ endif()
 # --------------------------------------------------------------------------------
 # MorphIO
 # --------------------------------------------------------------------------------
+common_find_package(MorphIO)
 if(NOT MorphIO_FOUND AND NOT TARGET MorphIO::morphio_shared)
     set(MORPHIO_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/MorphIO/include/)
 

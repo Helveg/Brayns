@@ -28,6 +28,8 @@
 class SynapseGroup
 {
 public:
+    virtual ~SynapseGroup() = default;
+
     virtual void mapToCell(const MorphologyInstance&) = 0;
     virtual void mapSimulation(const std::unordered_map<uint64_t, uint64_t>&) = 0;
     virtual ElementMaterialMap::Ptr addToModel(brayns::Model& model) const = 0;

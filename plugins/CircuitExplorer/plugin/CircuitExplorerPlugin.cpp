@@ -227,32 +227,6 @@ void _addSphereClippingPerspectiveCamera(brayns::Engine& engine)
     engine.addCameraType("circuit_explorer_sphere_clipping", properties);
 }
 
-std::string _sanitizeString(const std::string& input)
-{
-    static const std::vector<std::string> sanitetizeItems = {"\"", "\\", "'",
-                                                             ";",  "&",  "|",
-                                                             "`"};
-
-    std::string result = "";
-
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        bool found = false;
-        for (const auto& token : sanitetizeItems)
-        {
-            if (std::string(1, input[i]) == token)
-            {
-                result += "\\" + token;
-                found = true;
-                break;
-            }
-        }
-        if (!found)
-            result += std::string(1, input[i]);
-    }
-    return result;
-}
-
 size_t __createMaterial(brayns::Model& model, const brayns::Vector3d& color, const double opacity)
 {
     const auto matId = model.getMaterials().size();
@@ -286,7 +260,6 @@ void CircuitExplorerPlugin::init()
 {
     auto& scene = _api->getScene();
     auto& registry = scene.getLoaderRegistry();
-    auto& pm = _api->getParametersManager();
 
     // Store the current accumulation settings
     _prevAccumulationSetting = _api->getParametersManager()

@@ -72,7 +72,7 @@ inline std::unique_ptr<NeuronBuilder> __instantiateBuilder(const NeuronGeometryT
         return std::make_unique<SampleNeuronBuilder>();
     case NeuronGeometryType::SMOOTH:
         return std::make_unique<SDFNeuronBuilder>();
-    case NeuronGeometryType::VANILLA:
+    default:
         return std::make_unique<PrimitiveNeuronBuilder>();
     }
 }
@@ -182,9 +182,9 @@ brayns::PropertyMap NeuronMorphologyLoader::getProperties() const
 }
 
 std::vector<brayns::ModelDescriptorPtr>
-NeuronMorphologyLoader::importFromBlob(brayns::Blob&& blob,
-                                       const brayns::LoaderProgress& callback,
-                                       const brayns::PropertyMap& properties) const
+NeuronMorphologyLoader::importFromBlob(brayns::Blob&&,
+                                       const brayns::LoaderProgress&,
+                                       const brayns::PropertyMap&) const
 {
     throw std::runtime_error("MorphologyLoader: Import from blob not supported");
 }

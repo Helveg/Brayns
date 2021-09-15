@@ -27,7 +27,7 @@
 namespace sonataloader
 {
 std::vector<std::unique_ptr<SynapseGroup>>
-CommonEdgePopulationLoader::load(const PopulationLoadConfig& loadConfig,
+CommonEdgePopulationLoader::load(const PopulationLoadConfig&,
                                  const bbp::sonata::Selection& nodeSelection,
                                  SubProgressReport& cb) const
 {

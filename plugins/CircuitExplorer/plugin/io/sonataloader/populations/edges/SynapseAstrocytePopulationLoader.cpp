@@ -26,7 +26,7 @@
 namespace sonataloader
 {
 std::vector<std::unique_ptr<SynapseGroup>>
-SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig& loadConfig,
+SynapseAstrocytePopulationLoader::load(const PopulationLoadConfig&,
                                        const bbp::sonata::Selection& nodeSelection,
                                        SubProgressReport& cb) const
 {

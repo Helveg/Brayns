@@ -37,8 +37,8 @@ almostEqual(T x, T y, int ulp)
 class SDFNeuronBuilder::InternalBuilder
 {
 public:
-    InternalBuilder(const NeuronMorphology& m)
-     : m(m)
+    InternalBuilder(const NeuronMorphology& morph)
+     : m(morph)
     {
         // Soma
         if(m.hasSoma())

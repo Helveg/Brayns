@@ -31,7 +31,7 @@ std::vector<std::string> SynapseColorHandler::_getMethodsImpl() const
 }
 
 std::vector<std::string>
-SynapseColorHandler::_getMethodVariablesImpl(const std::string& method) const
+SynapseColorHandler::_getMethodVariablesImpl(const std::string&) const
 {
     return {};
 }
@@ -39,39 +39,41 @@ SynapseColorHandler::_getMethodVariablesImpl(const std::string& method) const
 void
 SynapseColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::Vector4f>& colorMap)
 {
+
     if(!colorMap.empty())
     {
-        if(!colorMap.empty())
+        auto it = colorMap.begin();
+        auto idIt = _gids.begin();
+        size_t index = 0;
+        while(it != colorMap.end() && idIt != _gids.end())
         {
-            auto it = colorMap.begin();
-            auto idIt = _gids.begin();
-            size_t index = 0;
-            while(it != colorMap.end() && idIt != _gids.end())
-            {
-                while(it->first != *idIt && idIt != _gids.end())
-                {
-                    ++idIt;
-                    ++index;
-                }
-                if(index >= _synapseMatIds.size())
-                    throw std::invalid_argument("Requested coloring GID '" + std::to_string(it->first)
-                                                + "' is beyond the highest GID loaded '"
-                                                + std::to_string(*_gids.rbegin()) + "'");
+            const auto id = it->first;
+            if(id > *_gids.rbegin())
+                throw std::invalid_argument("Requested coloring GID '" + std::to_string(id)
+                                            + "' is beyond the highest GID loaded '"
+                                            + std::to_string(*_gids.rbegin()) + "'");
 
+            while(id > *idIt && idIt != _gids.end())
+            {
+                ++idIt;
+                ++index;
+            }
+            if(id == *idIt)
+            {
                 for(const auto matId : _synapseMatIds[index])
                     _updateMaterial(matId, it->second);
-                ++it;
             }
+            ++it;
         }
-        else
+    }
+    else
+    {
+        ColorRoulette r;
+        for(const auto& materials : _synapseMatIds)
         {
-            ColorRoulette r;
-            for(const auto& materials : _synapseMatIds)
-            {
-                const auto& color = r.getNextColor();
-                for(const auto mat : materials)
-                    _updateMaterial(mat, color);
-            }
+            const auto& color = r.getNextColor();
+            for(const auto mat : materials)
+                _updateMaterial(mat, color);
         }
     }
 }
@@ -86,7 +88,7 @@ void SynapseColorHandler::_updateSingleColorImpl(const brayns::Vector4f& color)
 }
 
 void
-SynapseColorHandler::_updateColorImpl(const std::string& method, const ColorVariables& variables)
+SynapseColorHandler::_updateColorImpl(const std::string&, const ColorVariables&)
 {
 }
 }

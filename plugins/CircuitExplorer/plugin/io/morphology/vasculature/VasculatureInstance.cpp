@@ -32,8 +32,8 @@ VasculatureInstance::VasculatureInstance(const brayns::Vector3f& start, const fl
 }
 
 void VasculatureInstance::mapSimulation(const size_t globalOffset,
-                                        const std::vector<uint16_t>& sectionOffsets,
-                                        const std::vector<uint16_t>& sectionCompartments)
+                                        const std::vector<uint16_t>&,
+                                        const std::vector<uint16_t>&)
 {
     _geometry.userData = globalOffset;
 }
@@ -49,19 +49,18 @@ ElementMaterialMap::Ptr VasculatureInstance::addToModel(brayns::Model& model) co
     return materialMap;
 }
 
-size_t VasculatureInstance::getSectionSegmentCount(const int32_t section) const
+size_t VasculatureInstance::getSectionSegmentCount(const int32_t) const
 {
     return 1;
 }
 
 MorphologyInstance::SegmentPoints
-VasculatureInstance::getSegment(const int32_t section, const uint32_t segment) const
+VasculatureInstance::getSegment(const int32_t, const uint32_t) const
 {
     return std::make_pair(&_geometry.p0, &_geometry.p1);
 }
 
-uint64_t VasculatureInstance::getSegmentSimulationOffset(const int32_t section,
-                                                         const uint32_t segment) const
+uint64_t VasculatureInstance::getSegmentSimulationOffset(const int32_t, const uint32_t) const
 {
     return _geometry.userData;
 }

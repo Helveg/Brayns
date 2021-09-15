@@ -200,9 +200,9 @@ brayns::PropertyMap BBPLoader::getProperties() const
 }
 
 std::vector<brayns::ModelDescriptorPtr>
-BBPLoader::importFromBlob(brayns::Blob&& blob,
-                          const brayns::LoaderProgress& callback,
-                          const brayns::PropertyMap& properties) const
+BBPLoader::importFromBlob(brayns::Blob&&,
+                          const brayns::LoaderProgress&,
+                          const brayns::PropertyMap&) const
 {
     throw std::runtime_error("BBP loader: import from blob not supported");
 }

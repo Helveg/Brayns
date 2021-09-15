@@ -160,10 +160,10 @@ NeuronMorphology::NeuronMorphology(const std::string& path, const NeuronSection 
             _soma = readSoma(morph);
             if(_soma)
             {
-                for(auto& section : _sections)
+                for(auto& sec : _sections)
                 {
-                    if(section.parentId == -1)
-                        _soma->children.push_back(&section);
+                    if(sec.parentId == -1)
+                        _soma->children.push_back(&sec);
                 }
             }
         }
@@ -249,20 +249,20 @@ const NeuronMorphology::Section* NeuronMorphology::parent(const Section& section
 
 // ------------------------------------------------------------------------------------------------
 
-NeuronMorphology::Section::Section(const int32_t id,
-                                   const int32_t parentId,
-                                   const NeuronSection type)
- : id(id)
- , parentId(parentId)
- , type(type)
+NeuronMorphology::Section::Section(const int32_t idParam,
+                                   const int32_t parentIdParam,
+                                   const NeuronSection typeParam)
+ : id(idParam)
+ , parentId(parentIdParam)
+ , type(typeParam)
 {
 }
 
 // ------------------------------------------------------------------------------------------------
 
-NeuronMorphology::Soma::Soma(const brayns::Vector3f& center,
-                             const float radius)
- : center(center)
- , radius(radius)
+NeuronMorphology::Soma::Soma(const brayns::Vector3f& centerParam,
+                             const float radiusParam)
+ : center(centerParam)
+ , radius(radiusParam)
 {
 }

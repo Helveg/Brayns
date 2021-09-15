@@ -38,16 +38,6 @@ constexpr char methodByMType[]          = "mtype";
 constexpr char methodBySynapseClass[]   = "synapse class";
 constexpr char methodByRegion[]         = "region";
 constexpr char methodByHemisphere[]     = "hemisphere";
-
-std::vector<std::string> __getVariables(const bbp::sonata::CircuitConfig& config,
-                                        const std::string& pop,
-                                        const std::string& method,
-                                        const bbp::sonata::Selection& selection)
-{
-    const auto population = config.getNodePopulation(pop);
-    const auto& attributes = population.attributeNames();
-    return population.getAttribute<std::string>(method, selection);
-}
 } // namespace
 
 NeuronColorHandler::NeuronColorHandler(brayns::ModelDescriptor* model,
@@ -93,7 +83,8 @@ NeuronColorHandler::_getMethodVariablesImpl(const std::string& method) const
         return EnumWrapper<NeuronSection>().toStringList();
 
     const auto selection = bbp::sonata::Selection::fromValues(_ids);
-    const auto values = __getVariables(_config, _population, method, selection);
+    const auto values = _config.getNodePopulation(_population)
+            .getAttribute<std::string>(method, selection);
     const auto unique = std::unordered_set<std::string>(values.begin(), values.end());
     return std::vector<std::string>(unique.begin(), unique.end());
 }
@@ -107,16 +98,17 @@ void NeuronColorHandler::_updateColorByIdImpl(const std::map<uint64_t, brayns::V
         while(it != colorMap.end() && i < _ids.size())
         {
             const auto id = it->first;
+            if(id > _ids.back())
+                throw std::invalid_argument("Requested coloring ID '" + std::to_string(id)
+                                            + "' is beyond the highest ID loaded '"
+                                            + std::to_string(_ids.back()) + "'");
+
             while(_ids[i] < id && i < _ids.size())
                 ++i;
 
             if(_ids[i] == id)
                 _elements[i]->setColor(_model, it->second);
-            else
-                throw std::invalid_argument("NeuronColorHandler: Could not set color by ID: ID '"
-                                            + std::to_string(id) + "' not found in circuit");
 
-            ++i;
             ++it;
         }
     }
@@ -170,7 +162,8 @@ void NeuronColorHandler::_colorWithInput(const std::string& method, const ColorV
     else
     {
         const auto selection = bbp::sonata::Selection::fromValues(_ids);
-        const auto values = __getVariables(_config, _population, method, selection);
+        const auto values = _config.getNodePopulation(_population)
+                .getAttribute<std::string>(method, selection);
 
         std::unordered_map<std::string, std::vector<size_t>> map;
         for(size_t i = 0; i < values.size(); ++i)
@@ -211,7 +204,8 @@ void NeuronColorHandler::_colorRandomly(const std::string& method)
     else
     {
         const auto selection = bbp::sonata::Selection::fromValues(_ids);
-        const auto values = __getVariables(_config, _population, method, selection);
+        const auto values = _config.getNodePopulation(_population)
+                .getAttribute<std::string>(method, selection);
 
         ColorDeck deck;
         for(size_t i = 0; i < _elements.size(); ++i)
