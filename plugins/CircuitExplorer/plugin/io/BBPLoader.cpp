@@ -159,7 +159,7 @@ BBPLoader::BBPLoader(brayns::Scene& scene, CircuitColorManager& colorManager)
  : brayns::Loader(scene)
  , _colorManager(colorManager)
 {
-    PLUGIN_INFO << "Registering loader :" << getName() << std::endl;
+    PLUGIN_INFO << "Registering loader: " << getName() << std::endl;
 }
 
 std::vector<std::string> BBPLoader::getSupportedExtensions() const

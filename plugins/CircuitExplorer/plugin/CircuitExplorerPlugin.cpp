@@ -494,6 +494,23 @@ void CircuitExplorerPlugin::init()
                 return _colorCircuitByMethod(payload);
             });
 
+        actionInterface->registerRequest<ModelId, brayns::Message>(
+            {"enable-simulation-color",
+             "If the model has a simulation, it will be colored according to such simulation",
+             "ModelId", "The model to enable simulation in"},
+            [&](const ModelId& payload) -> brayns::Message {
+                return _enableSimulationColor(payload, true);
+            });
+
+        actionInterface->registerRequest<ModelId, brayns::Message>(
+            {"disable-simulation-color",
+             "Will make the model not be colored by simulation values, wether it has simulation "
+             "or not",
+             "ModelId", "The model to disable simulation in"},
+            [&](const ModelId& payload) -> brayns::Message {
+                return _enableSimulationColor(payload, false);
+            });
+
     } // if (actionInterface)
 
     auto& engine = _api->getEngine();
@@ -2217,6 +2234,27 @@ brayns::Message CircuitExplorerPlugin::_colorCircuitByMethod(
     catch(const std::exception& e)
     {
         result.setError(2, e.what());
+    }
+
+    return result;
+}
+
+brayns::Message CircuitExplorerPlugin::_enableSimulationColor(const ModelId& model, const bool v)
+{
+    brayns::Message result;
+    auto modelPtr = _api->getScene().getModel(model.modelId);
+    if(!modelPtr)
+    {
+        result.setError(1, "The model ID '"+std::to_string(model.modelId)+"' does not correspond "
+                        "to any existing model");
+        return result;
+    }
+
+    if(modelPtr->getModel().getSimulationHandler() != nullptr)
+    {
+        CircuitExplorerMaterial::setSimulationColorEnabled(modelPtr->getModel(), v);
+        _api->getScene().markModified();
+        _api->triggerRender();
     }
 
     return result;

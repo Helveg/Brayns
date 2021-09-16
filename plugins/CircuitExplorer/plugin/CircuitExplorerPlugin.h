@@ -85,6 +85,7 @@ private:
     CircuitColorMethodVariables
     _requestCircuitColorMethodVariables(const RequestCircuitColorMethodVariables& payload);
     brayns::Message _colorCircuitByMethod(const RequestColorCircuitByMethod& payload);
+    brayns::Message _enableSimulationColor(const ModelId& payload, const bool val);
 
 private:
     bool _dirty{false};
