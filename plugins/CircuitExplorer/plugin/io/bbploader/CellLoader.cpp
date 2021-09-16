@@ -46,6 +46,13 @@ inline NeuronMorphologyPipeline __createMorphologyPipeline(const BBPCircuitLoadC
 
     return pipeline;
 }
+
+inline void __tickProgress(SubProgressReport& spr, const size_t num) noexcept
+{
+    size_t i {0};
+    while(i++ < num)
+        spr.tick();
+}
 }
 
 std::vector<MorphologyInstancePtr> CellLoader::load(const BBPCircuitLoadConfig& lc,
@@ -64,18 +71,31 @@ std::vector<MorphologyInstancePtr> CellLoader::load(const BBPCircuitLoadConfig& 
     const auto rotations = circuit.getRotations(gids);
     const auto pipeline = __createMorphologyPipeline(lc);
     std::vector<MorphologyInstancePtr> cells (gids.size());
-    for(const auto& morphEntry : morphPathMap)
+
+    double total = 0.0;
+    const double step = 100.0 / static_cast<double>(morphPathMap.size());
+
+    std::unordered_map<std::string, std::vector<size_t>>::iterator it;
+    //#pragma omp parallel for
+    for(it = morphPathMap.begin(); it != morphPathMap.end(); ++it)
     {
-        NeuronMorphology morphology(morphEntry.first, lc.morphologySections);
+        NeuronMorphology morphology(it->first, lc.morphologySections);
         pipeline.process(morphology);
         auto builder = factory.neuronBuilders().instantiate(lc.geometryMode);
         builder->build(morphology);
-        for(const auto idx : morphEntry.second)
+        for(const auto idx : it->second)
         {
             cells[idx] = builder->instantiate(positions[idx], rotations[idx]);
             spr.tick();
         }
+
+        total += step;
+
+        //#pragma omp single
+        //__tickProgress(spr, it->second.size());
     }
+
+    spr.done();
 
     return cells;
 }

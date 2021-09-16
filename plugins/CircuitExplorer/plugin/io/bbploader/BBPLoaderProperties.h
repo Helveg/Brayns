@@ -31,8 +31,8 @@ namespace bbploader
 const brayns::Property PROP_PERCENTAGE = {
     "Percentage",
     1.0,
-    {"Density of cells in the circuit in percent (0.0 - 1.0. Will not have effect if a list of "
-     "GIDs is specified via 'gids'."}};
+    {"Percentage of cells of the circuit to load (0.0 - 1.0). Will not have effect if a list of "
+     "GIDs is specified via 'Gids'."}};
 
 const brayns::Property PROP_TARGETS = {
     "Targets",
@@ -42,13 +42,13 @@ const brayns::Property PROP_TARGETS = {
 const brayns::Property PROP_GIDS = {
     "Gids",
     std::string(""),
-    {"Circuit GIDs [comma separated list of GIDs]. Invalidates the 'percentage' and 'targets' "
+    {"Circuit GIDs [comma separated list of GIDs]. Invalidates the 'Percentage' and 'Targets' "
      "parameters when used."}};
 
 const brayns::Property PROP_REPORT{
     "Report",
     std::string(),
-    {"Circuit spike/soma/compartment report to load. Can be empty if 'report_type' is 'None'"}};
+    {"Circuit soma/compartment report to load. Can be empty if 'ReportType' is 'none'"}};
 
 const brayns::Property PROP_REPORT_TYPE = {
     "ReportType",
@@ -59,7 +59,7 @@ const brayns::Property PROP_REPORT_TYPE = {
 const brayns::Property PROP_SPIKE_TRANSITION_TIME = {
     "SpikeTransitionTime",
     1.0,
-    {"When 'report' is 'Spikes', controls the growth and fade of spike in seconds"}};
+    {"When 'ReportType' is 'spikes', controls the growth and fade of spike in seconds"}};
 
 const brayns::Property PROP_GEOMETRY_MODE = {
     "GeometryMode",

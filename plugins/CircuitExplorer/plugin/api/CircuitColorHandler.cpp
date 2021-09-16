@@ -27,7 +27,7 @@
 
 namespace
 {
-inline std::vector<uint64_t> parseIDRanges(const std::string& input)
+inline std::vector<uint64_t> __parseIDRanges(const std::string& input)
 {
     if(input.empty())
         throw std::invalid_argument("CircuitColorHandler: Received empty ID / ID range");
@@ -52,13 +52,17 @@ inline std::vector<uint64_t> parseIDRanges(const std::string& input)
         try
         {
             const auto rangeStart = std::stoull(rangeBeginStr);
-            const auto rangeEnd = std::stoull(rangeEndStr);
+            const auto rangeEnd = std::stoull(rangeEndStr) + 1;
+
+            if(rangeEnd <= rangeStart)
+                throw std::invalid_argument("The range end must be greater than the range start");
             result.resize(rangeEnd - rangeStart);
             std::iota(result.begin(), result.end(), rangeStart);
         }
-        catch (...)
+        catch (const std::invalid_argument& e)
         {
-            throw std::runtime_error("CircuitColorHandler: Could not parse ID range '"+input+"'");
+            throw std::runtime_error("CircuitColorHandler: Could not parse ID range '"+input+"': "
+                                     + std::string(e.what()));
         }
     }
 
@@ -145,7 +149,7 @@ void CircuitColorHandler::updateColorById(const ColorVariables& variables)
             const auto& rawIds = entry.first;
             const auto& color = entry.second;
 
-            const auto ids = parseIDRanges(rawIds);
+            const auto ids = __parseIDRanges(rawIds);
             for(const auto id : ids)
                 colorMap[id] = color;
         }

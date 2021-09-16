@@ -1,6 +1,7 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ * Authors: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ *          Nadir Roman Guerrero <nadir.romanguerrero@epfl.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -40,3 +41,9 @@
         PLUGIN_ERROR << __message << std::endl; \
         throw std::runtime_error(__message);    \
     }
+
+#define PLUGIN_PROGRESS(__progress, __msg) \
+    std::cout << "[INFO ] [CIRCUIT_EXPLORER] " << __msg << " " << __progress << "% \r"; \
+    std::cout.flush();
+
+#define PLUGIN_PROGRESS_DONE std::cout << std::endl;

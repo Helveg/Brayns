@@ -18,6 +18,8 @@
 
 #include "ProgressReport.h"
 
+#include <plugin/api/Log.h>
+
 SubProgressReport::SubProgressReport(const brayns::LoaderProgress& cb,
                                      const std::string& message,
                                      const float start,
@@ -27,6 +29,8 @@ SubProgressReport::SubProgressReport(const brayns::LoaderProgress& cb,
  , _message(message)
  , _start(start)
  , _tick(chunk / static_cast<float>(numTicks))
+ , _localTick(1.f / static_cast<float>(numTicks))
+ , _progress(0.f)
  , _localProgress(0.f)
 {
     _cb.updateProgress(_message, _start);
@@ -34,8 +38,16 @@ SubProgressReport::SubProgressReport(const brayns::LoaderProgress& cb,
 
 void SubProgressReport::tick() noexcept
 {
-    _localProgress += _tick;
-    _cb.updateProgress(_message, _start + _localProgress);
+    _progress += _tick;
+    _cb.updateProgress(_message, _start + _progress);
+    _localProgress += _localTick;
+    PLUGIN_PROGRESS(static_cast<uint32_t>(_localProgress * 100.0), _message);
+}
+
+void SubProgressReport::done() noexcept
+{
+    PLUGIN_PROGRESS(100u, _message);
+    PLUGIN_PROGRESS_DONE;
 }
 
 ProgressReport::ProgressReport(const brayns::LoaderProgress& cb,

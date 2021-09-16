@@ -83,15 +83,22 @@ inline brain::GIDSet __computeInitialGIDs(const brion::BlueConfig& config,
         allGids.insert(tempGids.begin(), tempGids.end());
     }
 
+    if(lc.percentage >= 1.f)
+        return allGids;
+
     const auto expectedSize = static_cast<size_t>(allGids.size() * lc.percentage);
     const auto skipFactor = static_cast<size_t>(static_cast<float>(allGids.size())
                                                 / static_cast<float>(expectedSize));
     brain::GIDSet finalList;
-    auto it = allGids.begin();
-    while(it != allGids.end())
+    auto it = finalList.begin();
+    auto allIt = allGids.begin();
+    while(allIt != allGids.end())
     {
-        finalList.insert(*it);
-        std::advance(it, skipFactor);
+        finalList.insert(it, *allIt);
+        ++it;
+        size_t counter {0};
+        while(counter++ < skipFactor && allIt != allGids.end())
+            ++allIt;
     }
 
     return finalList;
@@ -116,6 +123,7 @@ inline brayns::ModelDescriptorPtr __loadSynapse(const std::string& path,
         synapseMatMap[i] = synapses[i]->addToModel(*model);
         aslpr.tick();
     }
+    aslpr.done();
     model->updateBounds();
 
     brayns::ModelMetadata metadata =
@@ -247,6 +255,7 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     // COMPUTE INITIAL GIDS
     // -------------------------------------------------------------------------------------------
     pr.nextSubProgress("Processing GIDs to load");
+    brayns::Timer gidsTimer;
     auto gids = __computeInitialGIDs(config, circuit, loadConfig);
 
     // Load simulation, intersect initial gids with simulation gids
@@ -254,15 +263,20 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     if(simulation)
         gids = simulation->getReportGids();
 
+    PLUGIN_INFO << "Computed GIDS in " << gidsTimer.elapsed() << std::endl;
+
     // LOAD CELLS
     // -------------------------------------------------------------------------------------------
     auto lcpr = pr.nextSubProgress("Loading cells", gids.size());
+    brayns::Timer cellLoadTimer;
     auto cells = CellLoader::load(loadConfig, gids, circuit, lcpr);
+    PLUGIN_INFO << "Loaded cells in " << cellLoadTimer.elapsed() << std::endl;
 
     // MAP SIMULATION (IF ANY)
     // -------------------------------------------------------------------------------------------
     if(simulation)
     {
+        brayns::Timer loadSimTimer;
         auto lspr = pr.nextSubProgress("Loading simulation", gids.size());
         const auto mapping = simulation->getMapping(gids);
         for(size_t i = 0; i < mapping.size(); ++i)
@@ -271,16 +285,23 @@ BBPLoader::importFromBlueConfig(const std::string& path,
             cells[i]->mapSimulation(cm.globalOffset, cm.offsets, cm.compartments);
             lspr.tick();
         }
+        lspr.done();
         cellModel->setSimulationHandler(simulation->createHandler());
         TransferFunctionUtils::set(_scene.getTransferFunction());
+        PLUGIN_INFO << "Loaded simulation in " << loadSimTimer.elapsed() << std::endl;
     }
 
     // CREATE MODEL DESCRIPTOR
     // -------------------------------------------------------------------------------------------
+    brayns::Timer geomTimer;
     auto amgpr = pr.nextSubProgress("Generating geometry", gids.size());
     std::vector<ElementMaterialMap::Ptr> cellMatMap (gids.size());
     for(size_t i = 0; i < cells.size(); ++i)
+    {
         cellMatMap[i] = cells[i]->addToModel(*cellModel);
+        amgpr.tick();
+    }
+    amgpr.done();
     cellModel->updateBounds();
     if(simulation)
         CircuitExplorerMaterial::setSimulationColorEnabled(*cellModel, true);
@@ -303,8 +324,11 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     modelDescriptor->setTransformation(transformation);
     result.push_back(modelDescriptor);
 
+    PLUGIN_INFO << "Geometry generated in " << geomTimer.elapsed() << std::endl;
+
     // CREATE COLOR HANDLER
     // -------------------------------------------------------------------------------------------
+    brayns::Timer colorHandlerTimer;
     auto cellColorHandler = std::make_unique<NeuronColorHandler>(modelDescriptor.get(),
                                                                  __getCircuitFilePath(config),
                                                                  config.getCircuitPopulation());
@@ -315,11 +339,13 @@ BBPLoader::importFromBlueConfig(const std::string& path,
         cmptr->unregisterHandler(m.getModelID());
     });
     _colorManager.registerHandler(std::move(cellColorHandler));
+    PLUGIN_INFO << "Color handled done in " << colorHandlerTimer.elapsed() << std::endl;
 
     // LOAD AFFERENT (IF REQUESTED)
     // -------------------------------------------------------------------------------------------
     if(loadConfig.loadAfferent)
     {
+        brayns::Timer synTimer;
         auto model = __loadSynapse(path,
                                    circuit,
                                    gids,
@@ -329,12 +355,14 @@ BBPLoader::importFromBlueConfig(const std::string& path,
                                    _scene.createModel(),
                                    _colorManager);
         result.push_back(model);
+        PLUGIN_INFO << "Loaded afferent in " << synTimer.elapsed() << std::endl;
     }
 
     // LOAD EFFERENT (IF REQUESTED)
     // -------------------------------------------------------------------------------------------
     if(loadConfig.loadEfferent)
     {
+        brayns::Timer synTimer;
         auto model = __loadSynapse(path,
                                    circuit,
                                    gids,
@@ -344,6 +372,7 @@ BBPLoader::importFromBlueConfig(const std::string& path,
                                    _scene.createModel(),
                                    _colorManager);
         result.push_back(model);
+        PLUGIN_INFO << "Loaded efferent in " << synTimer.elapsed() << std::endl;
     }
 
     return result;
