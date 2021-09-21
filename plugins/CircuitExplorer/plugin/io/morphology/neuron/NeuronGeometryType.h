@@ -56,7 +56,7 @@ EnumWrapper<NeuronGeometryType>::fromString(const std::string& src) const
     else if(src == SAMPLES_NAME)
         return NeuronGeometryType::SAMPLES;
 
-    throw std::invalid_argument("NeuronGeometryType: Unknown section name '" + src + "'");
+    throw std::invalid_argument("NeuronGeometryType: Unknown geometry type name '" + src + "'");
 }
 
 template<>

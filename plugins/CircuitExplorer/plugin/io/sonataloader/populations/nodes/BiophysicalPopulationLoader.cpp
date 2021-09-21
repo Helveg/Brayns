@@ -27,6 +27,9 @@
 #include <plugin/io/sonataloader/data/SonataCells.h>
 #include <plugin/io/sonataloader/populations/nodes/colorhandlers/NeuronColorHandler.h>
 
+#include <future>
+#include <mutex>
+
 namespace sonataloader
 {
 namespace
@@ -55,6 +58,7 @@ BiophysicalPopulationLoader::load(const PopulationLoadConfig& loadSettings,
                                   const bbp::sonata::Selection& nodeSelection,
                                   SubProgressReport& cb) const
 {
+    static std::mutex loadMtx;
     const SonataFactories factories;
 
     const auto nodesSize = nodeSelection.flatSize();
@@ -71,21 +75,30 @@ BiophysicalPopulationLoader::load(const PopulationLoadConfig& loadSettings,
 
     const auto morphologyPipeline = __createMorphologyPipeline(loadSettings.neurons);
 
-    for(const auto& entry : morphologyMap)
+    const auto loadFn = [&](const std::string& name, const std::vector<size_t>& indices)
     {
-        // Load morphology
-        const auto morphPath = _populationProperties.morphologiesDir + "/" + entry.first + ".swc";
-        NeuronMorphology m (morphPath, loadSettings.neurons.sections);
-        morphologyPipeline.process(m);
+        NeuronMorphology morphology(_populationProperties.morphologiesDir + "/" + name + ".swc",
+                                    loadSettings.neurons.sections);
+        morphologyPipeline.process(morphology);
         auto builder = factories.neuronBuilders().instantiate(loadSettings.neurons.mode);
-        builder->build(m);
-
-        // Instantiate the morphology for every cell with such morphology class
-        for(const auto idx : entry.second)
-        {
+        builder->build(morphology);
+        for(const auto idx : indices)
             result[idx] = builder->instantiate(positions[idx], rotations[idx]);
-            cb.tick();
+        {
+            std::lock_guard<std::mutex> lock(loadMtx);
+            cb.tickBatch(indices.size());
         }
+    };
+
+    std::vector<std::future<void>> loadTasks;
+    loadTasks.reserve(morphologyMap.size());
+    for(const auto& entry : morphologyMap)
+        loadTasks.push_back(std::async(loadFn, entry.first, entry.second));
+
+    for(const auto& task : loadTasks)
+    {
+        if(task.valid())
+            task.wait();
     }
 
     return result;

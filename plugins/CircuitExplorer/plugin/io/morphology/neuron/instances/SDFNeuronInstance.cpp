@@ -70,33 +70,25 @@ ElementMaterialMap::Ptr  SDFNeuronInstance::addToModel(brayns::Model& model) con
     // Add geometries to Model. We do not know the indices of the neighbours
     // yet so we leave them empty.
     std::unordered_map<NeuronSection, size_t> sectionToMat;
-    for (size_t i = 0; i < _sdfData->sectionTypes.size(); ++i)
+    for (const auto& entry : _sdfData->sectionTypeMap)
     {
-        const auto sectionType =  _sdfData->sectionTypes[i];
-        auto it = sectionToMat.find(sectionType);
-        size_t materialId = 0;
-        if(it == sectionToMat.end())
+        const auto materialId = CircuitExplorerMaterial::create(model);
+        sectionToMat[entry.first] = materialId;
+        for(const auto geomIdx : entry.second)
         {
-            materialId = CircuitExplorerMaterial::create(model);
-            sectionToMat[sectionType] = materialId;
+            localToGlobalIndex[geomIdx] =
+                model.addSDFGeometry(materialId, _sdfGeometries[geomIdx], {});
         }
-        else
-            materialId = it->second;
-
-        localToGlobalIndex[i] =
-            model.addSDFGeometry(materialId, _sdfGeometries[i], {});
     }
 
     // Write the neighbours using global indices
-    std::vector<size_t> neighboursTmp;
-    for (size_t i = 0; i < _sdfData->sectionTypes.size(); ++i)
+    for (size_t i = 0; i < _sdfGeometries.size(); ++i)
     {
         const size_t globalIndex = localToGlobalIndex[i];
-        neighboursTmp.clear();
 
-        for (auto localNeighbourIndex : _sdfData->neighbours[i])
-            neighboursTmp.push_back(
-                localToGlobalIndex[localNeighbourIndex]);
+        std::vector<size_t> neighboursTmp (_sdfData->neighbours[i].size());
+        for (size_t j = 0; j < _sdfData->neighbours[i].size(); ++j)
+            neighboursTmp[j] = localToGlobalIndex[_sdfData->neighbours[i][j]];
 
         model.updateSDFGeometryNeighbours(globalIndex, neighboursTmp);
     }

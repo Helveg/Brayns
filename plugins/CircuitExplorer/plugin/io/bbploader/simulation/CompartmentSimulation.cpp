@@ -43,7 +43,7 @@ CompartmentSimulation::getMapping(const brain::GIDSet& inputGids) const
 
     std::vector<Simulation::CellMapping> mapping (inputGids.size());
 
-    //#pragma omp parallel for
+    #pragma omp parallel for
     for(size_t i = 0; i < inputGids.size(); ++i)
     {
         const auto& count = ccounts[i];

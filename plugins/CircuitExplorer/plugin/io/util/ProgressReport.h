@@ -30,16 +30,13 @@ public:
                       const size_t numTicks);
 
     void tick() noexcept;
-
-    void done() noexcept;
+    void tickBatch(const size_t num) noexcept;
 private:
     const brayns::LoaderProgress& _cb;
     const std::string _message;
     const float _start;
     const float _tick;
-    const float _localTick;
     float _progress;
-    float _localProgress;
 };
 
 class ProgressReport

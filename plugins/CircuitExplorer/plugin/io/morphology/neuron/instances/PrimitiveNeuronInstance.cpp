@@ -68,34 +68,26 @@ void PrimitiveNeuronInstance::mapSimulation(const size_t globalOffset,
 
 ElementMaterialMap::Ptr PrimitiveNeuronInstance::addToModel(brayns::Model& model) const
 {
-    // Add geometries to Model. We do not know the indices of the neighbours
-    // yet so we leave them empty.
     std::unordered_map<NeuronSection, size_t> sectionToMat;
-    for (size_t i = 0; i < _data->geometries.size(); ++i)
+    for(const auto& sectionTypeGeom : _data->sectionTypeMap)
     {
-        const auto sectionType = _data->sectionTypes[i];
-        auto it = sectionToMat.find(sectionType);
-        size_t materialId = 0;
-        if(it == sectionToMat.end())
+        const auto materialId = CircuitExplorerMaterial::create(model);
+        sectionToMat[sectionTypeGeom.first] = materialId;
+        for(const auto geometryIdx : sectionTypeGeom.second)
         {
-            materialId = CircuitExplorerMaterial::create(model);
-            sectionToMat[sectionType] = materialId;
-        }
-        else
-            materialId = it->second;
-
-        const auto& primitive = _data->geometries[i];
-        switch(primitive.type)
-        {
-        case PrimitiveType::SPHERE:
-            model.addSphere(materialId, _spheres[primitive.index]);
-            break;
-        case PrimitiveType::CONE:
-            model.addCone(materialId, _cones[primitive.index]);
-            break;
-        case PrimitiveType::CYLINDER:
-            model.addCylinder(materialId, _cylinders[primitive.index]);
-            break;
+            const auto& primitive = _data->geometries[geometryIdx];
+            switch(primitive.type)
+            {
+            case PrimitiveType::SPHERE:
+                model.addSphere(materialId, _spheres[primitive.index]);
+                break;
+            case PrimitiveType::CONE:
+                model.addCone(materialId, _cones[primitive.index]);
+                break;
+            case PrimitiveType::CYLINDER:
+                model.addCylinder(materialId, _cylinders[primitive.index]);
+                break;
+            }
         }
     }
 

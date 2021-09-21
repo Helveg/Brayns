@@ -18,12 +18,16 @@
 
 #include "CellLoader.h"
 
+#include <plugin/api/Log.h>
 #include <plugin/io/bbploader/BBPLoaderFactory.h>
 #include <plugin/io/morphology/neuron/NeuronMorphology.h>
 #include <plugin/io/morphology/neuron/NeuronMorphologyPipeline.h>
 #include <plugin/io/morphology/neuron/pipeline/RadiusMultiplier.h>
 #include <plugin/io/morphology/neuron/pipeline/RadiusOverride.h>
 #include <plugin/io/morphology/neuron/pipeline/RadiusSmoother.h>
+
+#include <future>
+#include <mutex>
 
 namespace bbploader
 {
@@ -46,13 +50,6 @@ inline NeuronMorphologyPipeline __createMorphologyPipeline(const BBPCircuitLoadC
 
     return pipeline;
 }
-
-inline void __tickProgress(SubProgressReport& spr, const size_t num) noexcept
-{
-    size_t i {0};
-    while(i++ < num)
-        spr.tick();
-}
 }
 
 std::vector<MorphologyInstancePtr> CellLoader::load(const BBPCircuitLoadConfig& lc,
@@ -72,30 +69,32 @@ std::vector<MorphologyInstancePtr> CellLoader::load(const BBPCircuitLoadConfig& 
     const auto pipeline = __createMorphologyPipeline(lc);
     std::vector<MorphologyInstancePtr> cells (gids.size());
 
-    double total = 0.0;
-    const double step = 100.0 / static_cast<double>(morphPathMap.size());
+    static std::mutex updateMtx;
 
-    std::unordered_map<std::string, std::vector<size_t>>::iterator it;
-    //#pragma omp parallel for
-    for(it = morphPathMap.begin(); it != morphPathMap.end(); ++it)
+    const auto loadFn = [&](const std::string& path, const std::vector<size_t>& indices)
     {
-        NeuronMorphology morphology(it->first, lc.morphologySections);
+        NeuronMorphology morphology(path, lc.morphologySections);
         pipeline.process(morphology);
         auto builder = factory.neuronBuilders().instantiate(lc.geometryMode);
         builder->build(morphology);
-        for(const auto idx : it->second)
-        {
+        for(const auto idx : indices)
             cells[idx] = builder->instantiate(positions[idx], rotations[idx]);
-            spr.tick();
+        {
+            std::lock_guard<std::mutex> lock(updateMtx);
+            spr.tickBatch(indices.size());
         }
+    };
 
-        total += step;
+    std::vector<std::future<void>> loadTasks;
+    loadTasks.reserve(morphPathMap.size());
+    for(const auto& entry : morphPathMap)
+        loadTasks.push_back(std::async(loadFn, entry.first, entry.second));
 
-        //#pragma omp single
-        //__tickProgress(spr, it->second.size());
+    for(const auto& task : loadTasks)
+    {
+        if(task.valid())
+            task.wait();
     }
-
-    spr.done();
 
     return cells;
 }

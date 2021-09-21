@@ -194,7 +194,10 @@ void SDFNeuronBuilder::_buildImpl(const NeuronMorphology& m)
         const auto& tn = builder._neighbours[i];
         _sdfData->neighbours[i] = std::vector<size_t>(tn.begin(), tn.end());
     }
-    _sdfData->sectionTypes = std::move(builder._sectionTypeMap);
+    // Group geometries by section type
+    for(size_t i = 0; i < builder._sectionTypeMap.size(); ++i)
+        _sdfData->sectionTypeMap[builder._sectionTypeMap[i]].push_back(i);
+
     _sdfData->sectionGeometries = std::move(builder._sectionMap);
 }
 

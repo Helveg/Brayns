@@ -126,35 +126,35 @@ void PrimitiveNeuronBuilder::addSphere(const brayns::Vector3f& c,
     const auto sphereIdx = _spheres.size();
     _spheres.push_back(brayns::Sphere(c, r));
     _data->geometries.push_back({PrimitiveType::SPHERE, sphereIdx});
-    _data->sectionTypes.push_back(section);
+    _data->sectionTypeMap[section].push_back(geomIdx);
     _data->sectionMap[sectionId].push_back(geomIdx);
 }
 
 void PrimitiveNeuronBuilder::addCylinder(const brayns::Vector3f& c,
-                                           const brayns::Vector3f& u,
-                                           const float r,
-                                           const NeuronSection section,
-                                           const int32_t sectionId) noexcept
+                                         const brayns::Vector3f& u,
+                                         const float r,
+                                         const NeuronSection section,
+                                         const int32_t sectionId) noexcept
 {
     const auto geomIdx = _data->geometries.size();
     const auto cylinderIdx = _cylinders.size();
     _cylinders.push_back(brayns::Cylinder(c, u, r));
     _data->geometries.push_back({PrimitiveType::CYLINDER, cylinderIdx});
-    _data->sectionTypes.push_back(section);
+    _data->sectionTypeMap[section].push_back(geomIdx);
     _data->sectionMap[sectionId].push_back(geomIdx);
 }
 
 void PrimitiveNeuronBuilder::addCone(const brayns::Vector3f& c,
-                                       const float r,
-                                       const brayns::Vector3f& u,
-                                       const float ru,
-                                       const NeuronSection section,
-                                       const int32_t sectionId) noexcept
+                                     const float r,
+                                     const brayns::Vector3f& u,
+                                     const float ru,
+                                     const NeuronSection section,
+                                     const int32_t sectionId) noexcept
 {
     const auto geomIdx = _data->geometries.size();
     const auto coneIdx = _cones.size();
     _cones.push_back(brayns::Cone(c, u, r, ru));
     _data->geometries.push_back({PrimitiveType::CONE, coneIdx});
-    _data->sectionTypes.push_back(section);
+    _data->sectionTypeMap[section].push_back(geomIdx);
     _data->sectionMap[sectionId].push_back(geomIdx);
 }

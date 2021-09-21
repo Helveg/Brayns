@@ -69,6 +69,7 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
     PLUGIN_WARN << "Vasculature section check disabled. Test data has wrong 'type' dataset"
                 << std::endl;
 
+    #pragma omp parallel for
     for(size_t i = 0; i < startPoints.size(); ++i)
     {
         if(sectionTypes[i] != VasculatureSection::NONE
@@ -80,8 +81,9 @@ VasculaturePopulationLoader::load(const PopulationLoadConfig& loadSettings,
                                                           endPoints[i],
                                                           endRadii[i],
                                                           sectionTypes[i]);
-        cb.tick();
     }
+
+    cb.tickBatch(startPoints.size());
 
     return result;
 }

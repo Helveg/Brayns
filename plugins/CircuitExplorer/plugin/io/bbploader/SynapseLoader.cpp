@@ -13,22 +13,26 @@ inline auto __load(const brain::Synapses& src,
                    uint32_t (brain::Synapse::*sectionMethod)() const,
                    SubProgressReport& spr)
 {
-    std::map<uint32_t, std::unique_ptr<SynapseGroup>> synapseMap;
-    for(const auto gid : gids)
-        synapseMap[gid] = std::make_unique<OldSurfaceSynapseGroup>();
-
-    for(const auto& synapse : src)
-    {
-        auto& group = static_cast<OldSurfaceSynapseGroup&>(*synapseMap[(synapse.*gidMethod)()]);
-        group.addSynapse(0, (synapse.*sectionMethod)(), (synapse.*posMethod)());
-    }
-
     std::vector<std::unique_ptr<SynapseGroup>> result;
-    result.reserve(synapseMap.size());
-    for(auto& entry : synapseMap)
+    if(!src.empty())
     {
-        result.push_back(std::move(entry.second));
-        spr.tick();
+        std::map<uint32_t, std::unique_ptr<SynapseGroup>> synapseMap;
+        for(const auto gid : gids)
+            synapseMap[gid] = std::make_unique<OldSurfaceSynapseGroup>();
+
+        for(const auto& synapse : src)
+        {
+            auto& group = static_cast<OldSurfaceSynapseGroup&>(
+                        *synapseMap[(synapse.*gidMethod)()]);
+            group.addSynapse(0, (synapse.*sectionMethod)(), (synapse.*posMethod)());
+        }
+
+        result.reserve(synapseMap.size());
+        for(auto& entry : synapseMap)
+        {
+            result.push_back(std::move(entry.second));
+            spr.tick();
+        }
     }
 
     return result;

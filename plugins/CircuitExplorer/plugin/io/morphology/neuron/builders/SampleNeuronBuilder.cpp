@@ -27,7 +27,7 @@ void SampleNeuronBuilder::_buildImpl(const NeuronMorphology& m)
     {
         const auto& soma = m.soma();
         _samples.push_back(brayns::Sphere(soma.center, soma.radius));
-        _data->sectionTypes.push_back(NeuronSection::SOMA);
+        _data->sectionTypeMap[NeuronSection::SOMA].push_back(0);
         _data->sectionMap[-1].push_back(0);
     }
 
@@ -38,7 +38,7 @@ void SampleNeuronBuilder::_buildImpl(const NeuronMorphology& m)
         {
             const auto idx = _samples.size();
             _samples.push_back(brayns::Sphere(brayns::Vector3f(sample), sample.w));
-            _data->sectionTypes.push_back(section.type);
+            _data->sectionTypeMap[section.type].push_back(idx);
             _data->sectionMap[section.id].push_back(idx);
         }
     }

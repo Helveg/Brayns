@@ -41,9 +41,3 @@
         PLUGIN_ERROR << __message << std::endl; \
         throw std::runtime_error(__message);    \
     }
-
-#define PLUGIN_PROGRESS(__progress, __msg) \
-    std::cout << "[INFO ] [CIRCUIT_EXPLORER] " << __msg << " " << __progress << "% \r"; \
-    std::cout.flush();
-
-#define PLUGIN_PROGRESS_DONE std::cout << std::endl;

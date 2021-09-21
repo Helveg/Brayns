@@ -204,12 +204,10 @@ void __checkMorphologyParts(const brayns::PropertyMap& props,
                                     "one per population (must be one of the possible values)");
 }
 
-void __ensureMinimalSections(const bbp::sonata::CircuitConfig& config,
-                             const NeuronSection section,
+void __ensureMinimalSections(const NeuronSection section,
                              const VasculatureSection vascSection,
-                             const std::string& nodePopulationName)
+                             const bbp::sonata::PopulationProperties& props)
 {
-    const auto props = config.getNodePopulationProperties(nodePopulationName);
     if((props.type == "biophysical" || props.type == "astrocyte")
             && section == NeuronSection::NONE)
         throw std::invalid_argument("At least a valid neuron morphology seciton must be specified "
@@ -536,12 +534,19 @@ SonataLoaderProperties::checkAndParse(const std::string& path,
     std::vector<PopulationLoadConfig> populations(populationList.size());
     for(size_t i = 0; i < populationList.size(); ++i)
     {
+        const bbp::sonata::PopulationProperties props =
+                config.getNodePopulationProperties(populationList[i]);
+
         auto& pls = populations[i];
         pls.configPath = path;
         pls.node.name = populationList[i];
         pls.node.ids = nodeIds[i];
         pls.node.nodeSets = nodeSets[i];
         pls.node.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
+        if(pls.node.percentage == 0.f)
+            throw std::invalid_argument("SonataLoader: A negative or 0 node percentage "
+                                        "is not allowed");
+
         pls.node.simulationType = EnumWrapper<SimulationType>().fromString((simTypes[i]));
         pls.node.simulationPath = simPaths[i];
 
@@ -561,32 +566,36 @@ SonataLoaderProperties::checkAndParse(const std::string& path,
         pls.neurons.radiusMultiplier = morphologyRadiusMult[i];
         pls.vasculature.radiusMultiplier = morphologyRadiusMult[i];
 
-        pls.neurons.sections = NeuronSection::NONE;
-        if(!morphologySections.empty())
+        if(props.type != "vasculature")
         {
-            const EnumWrapper<NeuronSection> neuronSections;
-            for(const auto& part : morphologySections[i])
-                pls.neurons.sections |= neuronSections.fromString(part);
+            pls.neurons.sections = NeuronSection::NONE;
+            if(!morphologySections.empty())
+            {
+                const EnumWrapper<NeuronSection> neuronSections;
+                for(const auto& part : morphologySections[i])
+                    pls.neurons.sections |= neuronSections.fromString(part);
+            }
+
+            // If only soma requested, use primitive geometry
+            const EnumWrapper<NeuronGeometryType> geomTypeEnum;
+            pls.neurons.mode = pls.neurons.sections == NeuronSection::SOMA?
+                        NeuronGeometryType::SAMPLES : geomTypeEnum.fromString(morphologyLoadMode[i]);
         }
-
-        // If only soma requested, use primitive geometry
-        const EnumWrapper<NeuronGeometryType> geomTypeEnum;
-        pls.neurons.mode = pls.neurons.sections == NeuronSection::SOMA?
-                    NeuronGeometryType::SAMPLES : geomTypeEnum.fromString(morphologyLoadMode[i]);
-
-        pls.vasculature.sections = VasculatureSection::NONE;
-        if(!vasculatureSections.empty())
+        else
         {
-            const EnumWrapper<VasculatureSection> vasculatureSection;
-            for(const auto& part : vasculatureSections[i])
-                pls.vasculature.sections |= vasculatureSection.fromString(part);
+            pls.vasculature.sections = VasculatureSection::NONE;
+            if(!vasculatureSections.empty())
+            {
+                const EnumWrapper<VasculatureSection> vasculatureSection;
+                for(const auto& part : vasculatureSections[i])
+                    pls.vasculature.sections |= vasculatureSection.fromString(part);
+            }
         }
 
         // Make sure enough info has been specified to avoid loading an empty model
-        __ensureMinimalSections(config,
-                                pls.neurons.sections,
+        __ensureMinimalSections(pls.neurons.sections,
                                 pls.vasculature.sections,
-                                pls.node.name);
+                                props);
 
         pls.vasculature.radiiReport = vasculatureRadiiReports[i];
     }

@@ -29,9 +29,7 @@ SubProgressReport::SubProgressReport(const brayns::LoaderProgress& cb,
  , _message(message)
  , _start(start)
  , _tick(chunk / static_cast<float>(numTicks))
- , _localTick(1.f / static_cast<float>(numTicks))
  , _progress(0.f)
- , _localProgress(0.f)
 {
     _cb.updateProgress(_message, _start);
 }
@@ -40,14 +38,12 @@ void SubProgressReport::tick() noexcept
 {
     _progress += _tick;
     _cb.updateProgress(_message, _start + _progress);
-    _localProgress += _localTick;
-    PLUGIN_PROGRESS(static_cast<uint32_t>(_localProgress * 100.0), _message);
 }
 
-void SubProgressReport::done() noexcept
+void SubProgressReport::tickBatch(const size_t num) noexcept
 {
-    PLUGIN_PROGRESS(100u, _message);
-    PLUGIN_PROGRESS_DONE;
+    _progress += (_tick * num);
+    _cb.updateProgress(_message, _start + _progress);
 }
 
 ProgressReport::ProgressReport(const brayns::LoaderProgress& cb,

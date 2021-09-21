@@ -93,7 +93,6 @@ inline brayns::ModelDescriptorPtr createModelDescriptor(const std::string& name,
 }
 } // namespace
 
-
 SonataLoader::SonataLoader(brayns::Scene& scene,
                            CircuitColorManager& colorManager,
                            VasculatureRadiiSimulation& radiiHandler)
@@ -149,7 +148,7 @@ SonataLoader::importFromFile(const std::string& path,
     // Compute how much progress percentage each population load will consume
     size_t numModels = 0u;
     for(const auto& popLoadConfig : requestedPopulations)
-        numModels += popLoadConfig.edges.size() + 1;
+        numModels += popLoadConfig.edges.size() + 2; // + 2 because node load is splitted in 2
     float total = 0.f;
     const float chunk = (1.f / static_cast<float>(numModels));
 
@@ -159,8 +158,9 @@ SonataLoader::importFromFile(const std::string& path,
     for(const auto& loadConfig : requestedPopulations)
     {
         const auto& node = loadConfig.node;
-        const auto nodeSelection = selectNodes(config, node);
+        PLUGIN_INFO << "\tLoading " << node.name << " node population..." << std::endl;
 
+        const auto nodeSelection = selectNodes(config, node);
         if(nodeSelection.empty())
             throw std::runtime_error("Node population " + node.name + " selection is empty");
 
@@ -168,7 +168,6 @@ SonataLoader::importFromFile(const std::string& path,
         // LOAD NODES
         // ---------------------------------------------------------------------------------
         ProgressReport np (callback, total, chunk, 5u);
-
         const auto nodeIDs = nodeSelection.flatten();
         const auto nodeLoader  = instantiateNodes(factories, config, node);
         auto nlp = np.nextSubProgress("Loading " + node.name, nodeIDs.size());
@@ -194,57 +193,7 @@ SonataLoader::importFromFile(const std::string& path,
             nodeModel->setSimulationHandler(simulation->createSimulationHandler(nodeSelection));
             TransferFunctionUtils::set(_scene.getTransferFunction());
         }
-
-        // Add geometry to model and get the material mapping
-        // ---------------------------------------------------------------------------------
-        std::vector<ElementMaterialMap::Ptr> materialMaps;
-        materialMaps.reserve(nodes.size());
-        auto glp = np.nextSubProgress(node.name + ": Generating geometry", nodes.size());
-        for(const auto& n : nodes)
-        {
-            materialMaps.push_back(n->addToModel(*nodeModel));
-            glp.tick();
-        }
-        if(simulation)
-            CircuitExplorerMaterial::setSimulationColorEnabled(*nodeModel, true);
-
-        // Create the model descriptor
-        // ---------------------------------------------------------------------------------
-        np.nextSubProgress(node.name + ": Generating model");
-        nodeModel->updateBounds();
-        brayns::ModelMetadata nodeMetadata = {
-            {"Population", node.name},
-            {"Type", config.getNodePopulationProperties(node.name).type},
-            {"Report", node.simulationPath},
-            {"Node Sets", brayns::string_utils::join(node.nodeSets, ",")},
-            {"Number of nodes", std::to_string(nodeIDs.size())},
-            {"Circuit Path", path}
-        };
-        result.push_back(createModelDescriptor(node.name, path, nodeMetadata, nodeModel));
-        auto nodeModelPtr = result.back().get();
-        nodeModelPtr->setName(node.name);
-
-        // Create the color handler
-        // ---------------------------------------------------------------------------------
-        np.nextSubProgress(node.name + ": Generating color mapping");
-        auto nodeColorHandler = nodeLoader->createColorHandler(nodeModelPtr, path);
-        nodeColorHandler->setElements(nodeIDs, std::move(materialMaps));
-        _colorManager.registerHandler(std::move(nodeColorHandler));
-
-        // Handle the special case of vasculature radii report
-        // TODO: After engine refactoring, this should not be necessary
-        if(simulation && loadConfig.node.simulationType == SimulationType::BLOODFLOW_RADII)
-            _radiiSimulationHandler.registerModel(nodeModelPtr);
-
-        nodeModelPtr->onRemoved([cmPtr = &_colorManager,
-                                 rPtr = &_radiiSimulationHandler](const brayns::ModelDescriptor& m)
-        {
-            cmPtr->unregisterHandler(m.getModelID());
-            rPtr->unregisterModel(m.getModelID());
-        });
-
         total += chunk;
-        PLUGIN_INFO << "Loaded node population " << node.name << std::endl;
 
         // ---------------------------------------------------------------------------------
         // LOAD EDGES
@@ -252,13 +201,12 @@ SonataLoader::importFromFile(const std::string& path,
         for(const auto& edge : loadConfig.edges)
         {
             ProgressReport ep (callback, total, chunk, !edge.report.empty()? 6u : 5u);
-
             auto elp = ep.nextSubProgress("Loading " + edge.name, nodes.size());
             const auto edgeLoader = instantiateEdges(factories, config, edge);
-            const auto edges = edgeLoader->load(loadConfig, nodeSelection, elp);
+            auto edges = edgeLoader->load(loadConfig, nodeSelection, elp);
             if(edges.empty())
             {
-                PLUGIN_WARN << "Edge population " << edge.name << " is empty" << std::endl;
+                PLUGIN_WARN << "\t\tEdge population " << edge.name << " is empty" << std::endl;
                 continue;
             }
 
@@ -292,10 +240,11 @@ SonataLoader::importFromFile(const std::string& path,
             // Add geometry to model and get the material mapping
             // ---------------------------------------------------------------------------------
             std::vector<ElementMaterialMap::Ptr> edgeMaterialMaps (nodes.size());
-            auto eglp = ep.nextSubProgress(edge.name + ": Generating geometry", nodes.size());
+            auto eglp = ep.nextSubProgress(edge.name + ": Generating edge geometry", nodes.size());
             for(size_t j = 0; j < nodes.size(); ++j)
             {
                 edgeMaterialMaps[j] = edges[j]->addToModel(*edgeModel);
+                edges[j].reset(nullptr);
                 eglp.tick();
             }
             if(!edge.report.empty())
@@ -303,7 +252,7 @@ SonataLoader::importFromFile(const std::string& path,
 
             // Create the model descriptor
             // ---------------------------------------------------------------------------------
-            ep.nextSubProgress(edge.name + ": Generating model");
+            ep.nextSubProgress(edge.name + ": Generating edge model");
             brayns::ModelMetadata edgeMetadata = {
                 {"Population", edge.name},
                 {"Type", config.getEdgePopulationProperties(edge.name).type},
@@ -316,7 +265,7 @@ SonataLoader::importFromFile(const std::string& path,
 
             // Create the color handler
             // ---------------------------------------------------------------------------------
-            ep.nextSubProgress(edge.name + ": Generating color mapping");
+            ep.nextSubProgress(edge.name + ": Generating edge color mapping");
             auto edgeColorHandler = edgeLoader->createColorHandler(edgeModelPtr, path);
             edgeColorHandler->setElements(nodeIDs, std::move(edgeMaterialMaps));
             edgeModelPtr->onRemoved([cmPtr = &_colorManager](const brayns::ModelDescriptor& m)
@@ -326,11 +275,64 @@ SonataLoader::importFromFile(const std::string& path,
             _colorManager.registerHandler(std::move(edgeColorHandler));
 
             total += chunk;
-            PLUGIN_INFO << "Loaded " <<edge.name<< " for " <<node.name<< " nodes" << std::endl;
+            PLUGIN_INFO << "\t\tLoaded " <<edge.name<< " for " <<node.name<< " nodes" << std::endl;
         }
+
+        // ---------------------------------------------------------------------------------
+        // CREATE NODE MODEL
+        // ---------------------------------------------------------------------------------
+        // Add geometry to model and get the material mapping
+        // ---------------------------------------------------------------------------------
+        std::vector<ElementMaterialMap::Ptr> materialMaps (nodes.size());
+        auto glp = np.nextSubProgress(node.name + ": Generating node geometry", nodes.size());
+        for(size_t i = 0; i < nodes.size(); ++i)
+        {
+            materialMaps[i] = nodes[i]->addToModel(*nodeModel);
+            nodes[i].reset(nullptr);
+            glp.tick();
+        }
+        if(simulation)
+            CircuitExplorerMaterial::setSimulationColorEnabled(*nodeModel, true);
+
+        // Create the model descriptor
+        // ---------------------------------------------------------------------------------
+        np.nextSubProgress(node.name + ": Generating node model");
+        nodeModel->updateBounds();
+        brayns::ModelMetadata nodeMetadata = {
+            {"Population", node.name},
+            {"Type", config.getNodePopulationProperties(node.name).type},
+            {"Report", node.simulationPath},
+            {"Node Sets", brayns::string_utils::join(node.nodeSets, ",")},
+            {"Number of nodes", std::to_string(nodeIDs.size())},
+            {"Circuit Path", path}
+        };
+        result.push_back(createModelDescriptor(node.name, path, nodeMetadata, nodeModel));
+        auto nodeModelPtr = result.back().get();
+        nodeModelPtr->setName(node.name);
+
+        // Create the color handler
+        // ---------------------------------------------------------------------------------
+        np.nextSubProgress(node.name + ": Generating node color mapping");
+        auto nodeColorHandler = nodeLoader->createColorHandler(nodeModelPtr, path);
+        nodeColorHandler->setElements(nodeIDs, std::move(materialMaps));
+        _colorManager.registerHandler(std::move(nodeColorHandler));
+
+        // Handle the special case of vasculature radii report
+        // TODO: After engine refactoring, this should not be necessary
+        if(simulation && loadConfig.node.simulationType == SimulationType::BLOODFLOW_RADII)
+            _radiiSimulationHandler.registerModel(nodeModelPtr);
+
+        nodeModelPtr->onRemoved([cmPtr = &_colorManager,
+                                 rPtr = &_radiiSimulationHandler](const brayns::ModelDescriptor& m)
+        {
+            cmPtr->unregisterHandler(m.getModelID());
+            rPtr->unregisterModel(m.getModelID());
+        });
+
+        total += chunk;
+        PLUGIN_INFO << "\tLoaded node population " << node.name << std::endl;
     }
 
     PLUGIN_INFO << getName() << ": Done in " << timer.elapsed() << " second(s)" << std::endl;
-
     return result;
 }

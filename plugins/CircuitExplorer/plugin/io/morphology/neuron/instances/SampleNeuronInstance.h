@@ -25,7 +25,7 @@
 
 struct SampleSharedData
 {
-    std::vector<NeuronSection> sectionTypes;
+    std::unordered_map<NeuronSection, std::vector<size_t>> sectionTypeMap;
     std::unordered_map<int32_t, std::vector<size_t>> sectionMap;
 };
 

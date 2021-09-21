@@ -40,6 +40,10 @@
 #include <brain/brain.h>
 #include <brion/brion.h>
 
+#include <iostream>
+#include <fstream>
+#include <unistd.h>
+
 using namespace bbploader;
 
 namespace
@@ -115,15 +119,18 @@ inline brayns::ModelDescriptorPtr __loadSynapse(const std::string& path,
 {
     const std::string msg = afferent? "Loading afferent synapses" : "Loading efferent synapses";
     auto aslpr = pr.nextSubProgress(msg, gids.size() * 2);
-    const auto synapses = SynapseLoader::load(circuit, gids, afferent, aslpr);
+    auto synapses = SynapseLoader::load(circuit, gids, afferent, aslpr);
     std::vector<ElementMaterialMap::Ptr> synapseMatMap (gids.size());
     for(size_t i = 0; i < cells.size(); ++i)
     {
         synapses[i]->mapToCell(*cells[i]);
         synapseMatMap[i] = synapses[i]->addToModel(*model);
+        synapses[i].reset(nullptr);
         aslpr.tick();
     }
-    aslpr.done();
+    if(model->empty())
+        return {nullptr};
+
     model->updateBounds();
 
     brayns::ModelMetadata metadata =
@@ -255,7 +262,6 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     // COMPUTE INITIAL GIDS
     // -------------------------------------------------------------------------------------------
     pr.nextSubProgress("Processing GIDs to load");
-    brayns::Timer gidsTimer;
     auto gids = __computeInitialGIDs(config, circuit, loadConfig);
 
     // Load simulation, intersect initial gids with simulation gids
@@ -263,20 +269,18 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     if(simulation)
         gids = simulation->getReportGids();
 
-    PLUGIN_INFO << "Computed GIDS in " << gidsTimer.elapsed() << std::endl;
+    if(gids.empty())
+        throw std::runtime_error("BBPLoader: No GIDs selected. Empty circuits not supported");
 
     // LOAD CELLS
     // -------------------------------------------------------------------------------------------
     auto lcpr = pr.nextSubProgress("Loading cells", gids.size());
-    brayns::Timer cellLoadTimer;
     auto cells = CellLoader::load(loadConfig, gids, circuit, lcpr);
-    PLUGIN_INFO << "Loaded cells in " << cellLoadTimer.elapsed() << std::endl;
 
     // MAP SIMULATION (IF ANY)
     // -------------------------------------------------------------------------------------------
     if(simulation)
     {
-        brayns::Timer loadSimTimer;
         auto lspr = pr.nextSubProgress("Loading simulation", gids.size());
         const auto mapping = simulation->getMapping(gids);
         for(size_t i = 0; i < mapping.size(); ++i)
@@ -285,23 +289,55 @@ BBPLoader::importFromBlueConfig(const std::string& path,
             cells[i]->mapSimulation(cm.globalOffset, cm.offsets, cm.compartments);
             lspr.tick();
         }
-        lspr.done();
         cellModel->setSimulationHandler(simulation->createHandler());
         TransferFunctionUtils::set(_scene.getTransferFunction());
-        PLUGIN_INFO << "Loaded simulation in " << loadSimTimer.elapsed() << std::endl;
+    }
+
+    // LOAD AFFERENT (IF REQUESTED)
+    // -------------------------------------------------------------------------------------------
+    if(loadConfig.loadAfferent)
+    {
+        auto model = __loadSynapse(path,
+                                   circuit,
+                                   gids,
+                                   true,
+                                   cells,
+                                   pr,
+                                   _scene.createModel(),
+                                   _colorManager);
+        if(model)
+            result.push_back(model);
+    }
+
+    // LOAD EFFERENT (IF REQUESTED)
+    // -------------------------------------------------------------------------------------------
+    if(loadConfig.loadEfferent)
+    {
+        auto model = __loadSynapse(path,
+                                   circuit,
+                                   gids,
+                                   false,
+                                   cells,
+                                   pr,
+                                   _scene.createModel(),
+                                   _colorManager);
+        if(model)
+            result.push_back(model);
     }
 
     // CREATE MODEL DESCRIPTOR
     // -------------------------------------------------------------------------------------------
-    brayns::Timer geomTimer;
     auto amgpr = pr.nextSubProgress("Generating geometry", gids.size());
     std::vector<ElementMaterialMap::Ptr> cellMatMap (gids.size());
     for(size_t i = 0; i < cells.size(); ++i)
     {
         cellMatMap[i] = cells[i]->addToModel(*cellModel);
+        cells[i].reset(nullptr);
         amgpr.tick();
     }
-    amgpr.done();
+    cells.clear();
+    cells.shrink_to_fit();
+
     cellModel->updateBounds();
     if(simulation)
         CircuitExplorerMaterial::setSimulationColorEnabled(*cellModel, true);
@@ -324,11 +360,8 @@ BBPLoader::importFromBlueConfig(const std::string& path,
     modelDescriptor->setTransformation(transformation);
     result.push_back(modelDescriptor);
 
-    PLUGIN_INFO << "Geometry generated in " << geomTimer.elapsed() << std::endl;
-
     // CREATE COLOR HANDLER
     // -------------------------------------------------------------------------------------------
-    brayns::Timer colorHandlerTimer;
     auto cellColorHandler = std::make_unique<NeuronColorHandler>(modelDescriptor.get(),
                                                                  __getCircuitFilePath(config),
                                                                  config.getCircuitPopulation());
@@ -339,41 +372,6 @@ BBPLoader::importFromBlueConfig(const std::string& path,
         cmptr->unregisterHandler(m.getModelID());
     });
     _colorManager.registerHandler(std::move(cellColorHandler));
-    PLUGIN_INFO << "Color handled done in " << colorHandlerTimer.elapsed() << std::endl;
-
-    // LOAD AFFERENT (IF REQUESTED)
-    // -------------------------------------------------------------------------------------------
-    if(loadConfig.loadAfferent)
-    {
-        brayns::Timer synTimer;
-        auto model = __loadSynapse(path,
-                                   circuit,
-                                   gids,
-                                   true,
-                                   cells,
-                                   pr,
-                                   _scene.createModel(),
-                                   _colorManager);
-        result.push_back(model);
-        PLUGIN_INFO << "Loaded afferent in " << synTimer.elapsed() << std::endl;
-    }
-
-    // LOAD EFFERENT (IF REQUESTED)
-    // -------------------------------------------------------------------------------------------
-    if(loadConfig.loadEfferent)
-    {
-        brayns::Timer synTimer;
-        auto model = __loadSynapse(path,
-                                   circuit,
-                                   gids,
-                                   false,
-                                   cells,
-                                   pr,
-                                   _scene.createModel(),
-                                   _colorManager);
-        result.push_back(model);
-        PLUGIN_INFO << "Loaded efferent in " << synTimer.elapsed() << std::endl;
-    }
 
     return result;
 }

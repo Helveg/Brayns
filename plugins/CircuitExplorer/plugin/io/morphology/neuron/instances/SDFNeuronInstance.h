@@ -32,7 +32,7 @@
 struct SDFSharedData
 {
     std::vector<std::vector<size_t>> neighbours;
-    std::vector<NeuronSection> sectionTypes;
+    std::unordered_map<NeuronSection, std::vector<size_t>> sectionTypeMap;
     std::unordered_map<int32_t, std::vector<size_t>> sectionGeometries;
 };
 

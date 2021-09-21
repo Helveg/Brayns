@@ -40,7 +40,6 @@ std::vector<Simulation::CellMapping>
 SpikeSimulation::getMapping(const brain::GIDSet& inputGids) const
 {
     std::vector<Simulation::CellMapping> result(inputGids.size());
-    //#pragma omp parallel for
     for(size_t i = 0; i < inputGids.size(); ++i)
         result[i].globalOffset = i;
     return result;

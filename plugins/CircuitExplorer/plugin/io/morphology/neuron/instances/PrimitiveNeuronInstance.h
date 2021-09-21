@@ -26,6 +26,7 @@
 #include <brayns/common/geometry/Sphere.h>
 
 #include <unordered_map>
+#include <unordered_set>
 
 enum class PrimitiveType : uint8_t
 {
@@ -43,7 +44,7 @@ struct PrimitiveGeometry
 struct PrimitiveSharedData
 {
     std::vector<PrimitiveGeometry> geometries;
-    std::vector<NeuronSection> sectionTypes;
+    std::unordered_map<NeuronSection, std::vector<size_t>> sectionTypeMap;
     std::unordered_map<int32_t, std::vector<size_t>> sectionMap;
 };
 

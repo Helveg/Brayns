@@ -66,20 +66,12 @@ ElementMaterialMap::Ptr SampleNeuronInstance::addToModel(brayns::Model& model) c
 {
     // Add geometries to the model
     std::unordered_map<NeuronSection, size_t> sectionToMat;
-    for (size_t i = 0; i < _samples.size(); ++i)
+    for (const auto& entry : _data->sectionTypeMap)
     {
-        const auto sectionType = _data->sectionTypes[i];
-        auto it = sectionToMat.find(sectionType);
-        size_t materialId = 0;
-        if(it == sectionToMat.end())
-        {
-            materialId = CircuitExplorerMaterial::create(model);
-            sectionToMat[sectionType] = materialId;
-        }
-        else
-            materialId = it->second;
-
-        model.addSphere(materialId, _samples[i]);
+        const auto materialId = CircuitExplorerMaterial::create(model);
+        sectionToMat[entry.first] = materialId;
+        for(const auto geomIdx : entry.second)
+            model.addSphere(materialId, _samples[geomIdx]);
     }
 
     const auto updateMaterialMap = [&](const NeuronSection section, size_t& buffer)

@@ -127,6 +127,10 @@ BBPCircuitLoadConfig BBPLoaderProperties::checkAndParse(const brion::BlueConfig&
 
     // Cells to load
     result.percentage = static_cast<float>(input.getProperty<double>(PROP_PERCENTAGE.name));
+    if(result.percentage < 0.f)
+        throw std::invalid_argument("BBPLoader: A negative percentage of cells is not allowed");
+    result.percentage = std::min(result.percentage, 1.f);
+
     result.targets = brayns::string_utils::split(
                 input.getPropertyRef<std::string>(PROP_TARGETS.name), ',');
     checkTargets(config, result.targets);
