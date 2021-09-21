@@ -24,6 +24,10 @@
 
 namespace bbploader
 {
+/**
+ * @brief The NeuronColorHandler class handlers element coloring for neuron and astrocytes
+ *        that were loaded from BBP format files (CircuitConfig/BlueConfig)
+ */
 class NeuronColorHandler : public CircuitColorHandler
 {
 public:

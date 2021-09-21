@@ -21,6 +21,10 @@
 #include <plugin/api/CircuitColorHandler.h>
 #include <plugin/io/morphology/vasculature/VasculatureSection.h>
 
+/**
+ * @brief The VasculatureMaterialMap class its an implementation of the ElementMaterialMap class
+ *        that allows CircuitColorHandlers to access the materials of a vasculature element
+ */
 class VasculatureMaterialMap : public ElementMaterialMap
 {
 public:

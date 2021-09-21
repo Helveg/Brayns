@@ -26,7 +26,7 @@
 #include <brion/brion.h>
 
 /**
- * @brief The VoltageSimulationHandler class handles BBP internal format
+ * @brief The CompartmentHandler class handles BBP's internal format
  *        compartment report frame access.
  */
 class CompartmentHandler : public brayns::AbstractSimulationHandler

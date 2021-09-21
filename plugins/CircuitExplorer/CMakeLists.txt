@@ -79,6 +79,7 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/sonataloader/data/SonataCells.cpp
     plugin/io/sonataloader/data/SonataEndFeetReader.cpp
     plugin/io/sonataloader/data/SonataSelection.cpp
+    plugin/io/sonataloader/data/SonataSimulationMapping.cpp
     plugin/io/sonataloader/data/SonataSynapses.cpp
     plugin/io/sonataloader/data/SonataVasculature.cpp
     plugin/io/sonataloader/populations/PopulationColorHandler.cpp
@@ -159,6 +160,7 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonataloader/data/SonataCells.h
     plugin/io/sonataloader/data/SonataEndFeetReader.h
     plugin/io/sonataloader/data/SonataSelection.h
+    plugin/io/sonataloader/data/SonataSimulationMapping.h
     plugin/io/sonataloader/data/SonataSynapses.h
     plugin/io/sonataloader/data/SonataVasculature.h
     plugin/io/sonataloader/populations/EdgePopulationLoader.h

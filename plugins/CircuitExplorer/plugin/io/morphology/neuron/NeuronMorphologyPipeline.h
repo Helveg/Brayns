@@ -32,6 +32,10 @@ class NeuronMorphologyPipelineStage
 public:
     virtual ~NeuronMorphologyPipelineStage() = default;
 
+    /**
+     * @brief applies a process to the soma and/or sections of the given morphology, effectively
+     *        altering it in the process
+     */
     virtual void proccess(NeuronMorphology& morphology) const = 0;
 };
 
@@ -43,6 +47,10 @@ public:
 class NeuronMorphologyPipeline
 {
 public:
+    /**
+     * @brief registers a processing stage into this pipeline. Pipeline stages are stored and
+     *        applied over a morphology in the same order that they were added
+     */
     template<typename StageClass, typename ...Args>
     void registerStage(Args&&...args)
     {
@@ -52,6 +60,10 @@ public:
         _stages.push_back(std::make_unique<StageClass>(std::forward<Args>(args)...));
     }
 
+    /**
+     * @brief Process a morphology object with all the registered stages. Pipeline stages are
+     *        applied over a morphology in the same order that they were added
+     */
     void process(NeuronMorphology& morphology) const
     {
         for(const auto& stage : _stages)

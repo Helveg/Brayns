@@ -31,6 +31,10 @@ constexpr char SMOOTH_NAME[]  = "smooth";
 constexpr char SAMPLES_NAME[] = "samples";
 }
 
+/**
+ * @brief The NeuronGeometryType enum holds the list of available geometry types into which
+ *        a morphology can be transformed
+ */
 enum class NeuronGeometryType : uint8_t
 {
     VANILLA = 0,

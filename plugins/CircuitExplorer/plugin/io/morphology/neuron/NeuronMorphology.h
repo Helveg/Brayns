@@ -67,13 +67,28 @@ public:
 public:
     NeuronMorphology(const std::string& path, const NeuronSection sections);
 
+    /**
+     * @brief returns true if this morphology was loaded with soma
+     */
     bool hasSoma() const noexcept;
+
+    /**
+     * @brief returns a reference to the soma object.
+     * @throws std::runtime_error if the morphology was loaded without soma
+     */
     Soma& soma();
     const Soma& soma() const;
 
+    /**
+     * @brief returns a list of all the sections that were loaded for this morphology
+     */
     std::vector<Section>& sections() noexcept;
     const std::vector<Section>& sections() const noexcept;
 
+    /**
+     * @brief returns a list with pointers to all the sections which are children of the
+     *        given section
+     */
     std::vector<Section*> sectionChildren(const Section& section) noexcept;
     std::vector<const Section*> sectionChildren(const Section& section) const noexcept;
 

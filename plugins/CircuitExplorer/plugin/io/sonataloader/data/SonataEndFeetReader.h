@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataEndFeetReader class reads SONATA vasculature endfeet conectivity files
+ *        into 3D meshes
+ */
 class SonataEndFeetReader
 {
 public:

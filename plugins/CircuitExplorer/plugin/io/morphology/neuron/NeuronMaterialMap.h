@@ -20,6 +20,10 @@
 
 #include <plugin/api/CircuitColorHandler.h>
 
+/**
+ * @brief The NeuronMaterialMap class its an implementation of the ElementMaterialMap class
+ *        that allows CircuitColorHandlers to access the materials of a neuron or astrocyte
+ */
 class NeuronMaterialMap : public ElementMaterialMap
 {
 public:

@@ -22,6 +22,9 @@
 
 namespace bbploader
 {
+/**
+ * @brief The SpikeSimulation class implements BBP internal format spike reports
+ */
 class SpikeSimulation : public Simulation
 {
 public:

@@ -18,9 +18,8 @@
 
 #include "NodeCompartmentLoader.h"
 
+#include <plugin/io/sonataloader/data/SonataSimulationMapping.h>
 #include <plugin/io/sonataloader/simulations/handlers/SonataReportHandler.h>
-
-#include <bbp/sonata/report_reader.h>
 
 namespace sonataloader
 {
@@ -44,16 +43,10 @@ NodeCompartmentLoader::NodeCompartmentLoader(const std::string& path,
 std::vector<NodeSimulationMapping>
 NodeCompartmentLoader::loadMapping(const bbp::sonata::Selection& s) const
 {
-    const bbp::sonata::ElementReportReader reader (_path);
-    const auto& reportPopulation = reader.openPopulation(_population);
-
-    const auto timeData = reportPopulation.getTimes();
-    const auto start = std::get<0>(timeData);
-    const auto step = std::get<2>(timeData);
-    auto frameData = reportPopulation.get(s, start, start + step);
-    const auto& rawMapping = frameData.ids;
-
-    // Compact mapping from libsonata
+    const auto rawMapping = SonataSimulationMapping::getCompartmentMapping(_path,
+                                                                           _population,
+                                                                           s.flatten());
+    // Compact mapping
     std::map<uint64_t, std::vector<uint16_t>> sortedCompartmentsSize;
     uint32_t lastSection = std::numeric_limits<uint32_t>::max();
     uint64_t lastNode = std::numeric_limits<uint64_t>::max();

@@ -111,27 +111,6 @@ SonataVasculature::getSegmentEndRadii(const Nodes& nodes, const Selection& selec
     return __getRadii(nodes, selection, attribEndDiameter);
 }
 
-std::vector<uint32_t>
-SonataVasculature::getSegmentSectionIds(const Nodes& nodes, const Selection& selection)
-{
-    __checkAttributes(nodes, {attribSectionId});
-    return nodes.getAttribute<uint32_t>(attribSectionId, selection);
-}
-
-std::vector<bbp::sonata::NodeID>
-SonataVasculature::getSegmentStartNodes(const Nodes& nodes, const Selection& selection)
-{
-    __checkAttributes(nodes, {attribStartNode});
-    return nodes.getAttribute<bbp::sonata::NodeID>(attribStartNode, selection);
-}
-
-std::vector<bbp::sonata::NodeID>
-SonataVasculature::getSegmentEndNodes(const Nodes& nodes, const Selection& selection)
-{
-    __checkAttributes(nodes, {attribEndNode});
-    return nodes.getAttribute<bbp::sonata::NodeID>(attribEndNode, selection);
-}
-
 std::vector<VasculatureSection>
 SonataVasculature::getSegmentSectionTypes(const Nodes& nodes, const Selection& selection)
 {

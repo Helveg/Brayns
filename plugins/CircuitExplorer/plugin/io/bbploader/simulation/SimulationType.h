@@ -27,6 +27,9 @@
 
 namespace bbploader
 {
+/**
+ * @brief The SimulationType enum list all supported simulation types from BBP internat formats
+ */
 enum class SimulationType : uint8_t
 {
     NONE = 0,

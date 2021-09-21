@@ -18,6 +18,7 @@
 
 #include "VasculatureReportLoader.h"
 
+#include <plugin/io/sonataloader/data/SonataSimulationMapping.h>
 #include <plugin/io/sonataloader/simulations/handlers/SonataReportHandler.h>
 #include <plugin/io/sonataloader/simulations/handlers/VasculatureRadiiHandler.h>
 
@@ -26,6 +27,7 @@ namespace sonataloader
 std::vector<NodeSimulationMapping>
 VasculatureReportLoader::loadMapping(const bbp::sonata::Selection& s) const
 {
+    /*
     const bbp::sonata::ElementReportReader reader (_path);
     const auto& reportPopulation = reader.openPopulation(_population);
 
@@ -34,6 +36,11 @@ VasculatureReportLoader::loadMapping(const bbp::sonata::Selection& s) const
     const auto step = std::get<2>(timeData);
     auto frameData = reportPopulation.get(s, start, start + step);
     const auto& rawMapping = frameData.ids;
+    */
+
+    const auto rawMapping = SonataSimulationMapping::getCompartmentMapping(_path,
+                                                                           _population,
+                                                                           s.flatten());
 
     // Sorted vasculature mapping indices
     std::map<uint64_t, size_t> sortedCompartmentsSize;

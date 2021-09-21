@@ -86,7 +86,7 @@ inline std::vector<brayns::Vector3f> __loadSurfacePos(const bbp::sonata::EdgePop
     return result;
 }
 
-inline void fixSections(std::vector<int32_t>& sectionIds)
+inline void __fixSections(std::vector<int32_t>& sectionIds) noexcept
 {
     std::transform(sectionIds.begin(), sectionIds.end(), sectionIds.begin(), [](int32_t secId)
     {
@@ -113,7 +113,7 @@ std::vector<int32_t> SonataSynapses::getAfferentSectionIds(const Edges& populati
 {
     __checkEdgeParameters(population, {attribAffSectionId});
     auto sectionIds = population.getAttribute<int32_t>(attribAffSectionId, selection);
-    fixSections(sectionIds);
+    __fixSections(sectionIds);
     return sectionIds;
 }
 
@@ -122,7 +122,7 @@ std::vector<int32_t> SonataSynapses::getEfferentSectionIds(const Edges& populati
 {
     __checkEdgeParameters(population, {attribEffSectionId});
     auto sectionIds = population.getAttribute<int32_t>(attribEffSectionId, selection);
-    fixSections(sectionIds);
+    __fixSections(sectionIds);
     return sectionIds;
 }
 
@@ -165,7 +165,7 @@ std::vector<int32_t> SonataSynapses::getEfferentAstrocyteSectionIds(const Edges&
 {
     __checkEdgeParameters(population, {attribAstroSectionId});
     auto sectionIds = population.getAttribute<int32_t>(attribAstroSectionId, selection);
-    fixSections(sectionIds);
+    __fixSections(sectionIds);
     return sectionIds;
 }
 

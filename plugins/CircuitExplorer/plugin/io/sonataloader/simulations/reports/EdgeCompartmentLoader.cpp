@@ -18,6 +18,7 @@
 
 #include "EdgeCompartmentLoader.h"
 
+#include <plugin/io/sonataloader/data/SonataSimulationMapping.h>
 #include <plugin/io/sonataloader/simulations/handlers/SonataReportHandler.h>
 
 #include <bbp/sonata/report_reader.h>
@@ -44,6 +45,7 @@ EdgeCompartmentLoader::EdgeCompartmentLoader(const std::string& path,
 std::vector<EdgeSimulationMapping>
 EdgeCompartmentLoader::loadMapping(const bbp::sonata::Selection& s) const
 {
+    /*
     const bbp::sonata::ElementReportReader reader (_path);
     const auto& reportPopulation = reader.openPopulation(_population);
 
@@ -52,11 +54,15 @@ EdgeCompartmentLoader::loadMapping(const bbp::sonata::Selection& s) const
     const auto step = std::get<2>(timeData);
     auto frameData = reportPopulation.get(s, start, start + step);
     const auto& rawMapping = frameData.ids;
-
+    */
+    const auto nodeIds = s.flatten();
+    const auto rawMapping = SonataSimulationMapping::getCompartmentMapping(_path,
+                                                                           _population,
+                                                                           nodeIds);
     // Pre-fill the map so all node Ids will have their mapping,
     // even if these nodes are not reported on the simulation
     std::map<uint64_t, EdgeSimulationMapping> sortedCompartmentsSize;
-    for(const auto nodeId : s.flatten())
+    for(const auto nodeId : nodeIds)
         sortedCompartmentsSize[nodeId] = {};
 
     // Gather mapping

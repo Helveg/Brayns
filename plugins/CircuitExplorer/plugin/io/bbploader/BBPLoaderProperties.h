@@ -107,7 +107,10 @@ const brayns::Property PROP_LOAD_EFFERENT_SYNAPSES = {
     false,
     {"Loads efferent synapses"}};
 
-
+/**
+ * @brief The BBPCircuitLoadConfig struct holds all the information to load a BBP's internal
+ *        format circuit
+ */
 struct BBPCircuitLoadConfig
 {
     float percentage;
@@ -124,11 +127,23 @@ struct BBPCircuitLoadConfig
     bool loadEfferent;
 };
 
+/**
+ * @brief The BBPLoaderProperties class manages and gives access to the BBPLoader input properties,
+ *        and check the correctness of the input parameters and files on disk before starting the
+ *        load process
+ */
 class BBPLoaderProperties
 {
 public:
+    /**
+     * @brief return the list of all available properties for BBPLoader
+     */
     static brayns::PropertyMap getPropertyList() noexcept;
 
+    /**
+     * @brief checks the sanity and parses the input parameters to load a specific circuit.
+     * @throws std::invalid_argument if any sanity/parsing check fails
+     */
     static BBPCircuitLoadConfig checkAndParse(const brion::BlueConfig& config,
                                               const brayns::PropertyMap& input);
 };

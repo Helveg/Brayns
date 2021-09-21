@@ -26,6 +26,10 @@
 
 namespace bbploader
 {
+/**
+ * @brief The BBPLoaderFactory class holds access to all the parameter based
+ *        loading objects factories for the BBPLoader
+ */
 class BBPLoaderFactory
 {
 public:

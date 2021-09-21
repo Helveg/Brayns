@@ -36,6 +36,10 @@ constexpr char ARTERIAL_CAPILLARY_NAME[]    = "arterial capillary";
 constexpr char TRANSITIONAL_NAME[]          = "transitional";
 }
 
+/**
+ * @brief The VasculatureSection enum list holds all the available vasculature morphology
+ *        sections, given also support to work with them as bitmask elements
+ */
 enum class VasculatureSection : uint8_t
 {
     NONE                = 0,

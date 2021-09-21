@@ -24,21 +24,37 @@
 
 #include <plugin/api/MaterialEnums.h>
 
-/** Additional marterial attributes */
+/** Additional marterial attributes key names */
 // TODO: Remove those once engines have been refactored
 const std::string MATERIAL_PROPERTY_CAST_USER_DATA   = "cast_simulation_data";
 const std::string MATERIAL_PROPERTY_SHADING_MODE     = "shading_mode";
 const std::string MATERIAL_PROPERTY_CLIPPING_MODE    = "clipping_mode";
 const std::string MATERIAL_PROPERTY_USER_PARAMETER   = "user_parameter";
 
+/**
+ * @brief The CircuitExplorerMaterial class holds utility functionality to create and
+ *        manitpulate materials within the CircuitExplorer plugin
+ */
 class CircuitExplorerMaterial
 {
 public:
+    /**
+     * @brief creates a material in the given model, initializing the extra CircuitExplorerMaterial
+     *        attributes so that it can be rendered appropiately
+     */
     static size_t create(brayns::Model& model,
                          const brayns::Vector3f& color = brayns::Vector3f(1.f, 1.f, 1.f));
 
+    /**
+     * @brief adds the CircuitExplorer additional material attributes to all the materials
+     *        of a given model
+     */
     static void addExtraAttributes(brayns::Model& model);
 
+    /**
+     * @brief manipulates the 'cast_simulation_data' parameter of CircuitExplorerMaterial,
+     *        allowing to show simulation colors (true) or geometry color (false) on demand.
+     */
     static void setSimulationColorEnabled(brayns::Model& model, const bool value);
 
 private:

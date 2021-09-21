@@ -35,6 +35,10 @@ public:
 
     virtual ~NeuronBuilder() = default;
 
+    /**
+     * @brief builds the geometry from the given morphology representation. If the builders
+     *        has already been used to build a geometry, this function has no effect
+     */
     void build(const NeuronMorphology& nm)
     {
         if(!_initialized)
@@ -44,6 +48,10 @@ public:
         }
     }
 
+    /**
+     * @brief creates a morphology instance by transforming the geometry built in the build()
+     *        method with the given translation and rotation
+     */
     MorphologyInstancePtr instantiate(const brayns::Vector3f& t,
                                       const brayns::Quaternion& r) const
     {

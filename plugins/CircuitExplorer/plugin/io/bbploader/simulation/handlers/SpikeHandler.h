@@ -29,6 +29,10 @@
 
 namespace bbploader
 {
+/**
+ * @brief The SpikeHandler class is in charge to provide simulation support to
+ *        Brayns for BBP's internal format spike reports
+ */
 class SpikeHandler : public brayns::AbstractSimulationHandler
 {
 public:

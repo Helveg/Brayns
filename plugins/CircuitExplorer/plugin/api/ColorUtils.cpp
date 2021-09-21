@@ -52,12 +52,12 @@ const brayns::Vector4f& ColorDeck::getColorForKey(const std::string& k) noexcept
 {
     const auto it = _colorMap.find(k);
     if(it == _colorMap.end())
-        return emplaceColor(k);
+        return _emplaceColor(k);
 
     return _TABLE.VALUES[it->second];
 }
 
-const brayns::Vector4f& ColorDeck::emplaceColor(const std::string& k) noexcept
+const brayns::Vector4f& ColorDeck::_emplaceColor(const std::string& k) noexcept
 {
     const auto nextIndex = _lastIndex++ % _TABLE.VALUES.size();
     _colorMap[k] = nextIndex;

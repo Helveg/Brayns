@@ -21,12 +21,30 @@
 #include <brayns/common/simulation/AbstractSimulationHandler.h>
 #include <brayns/engine/Model.h>
 
+/**
+ * @brief The VasculatureRadiiSimulation controls the update of SONATA Vasculature radii reports.
+ *        TODO: Current engines only support color varying simulations. Radii report modifies
+ *        geometry radii. Add support for generic simulation types on engines refactoring.
+ */
 class VasculatureRadiiSimulation
 {
 public:
+    /**
+     * @brief attempts to register a model into the list. If must have a VasculatureRadiiHandler
+     *        associated with it to succeed.
+     */
     void registerModel(brayns::ModelDescriptor* model);
+
+    /**
+     * @brief unregister the model given its ID from this class (if the given model id
+     *        corresponds to an existing model).
+     */
     void unregisterModel(size_t modelId);
 
+    /**
+     * @brief iterates over all the registered vasculature datasets, gathering the
+     *        current simulation frame and updating the geometry radii with it.
+     */
     void update();
 
 private:

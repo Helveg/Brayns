@@ -1,6 +1,7 @@
 /* Copyright (c) 2015-2021, EPFL/Blue Brain Project
  * All rights reserved. Do not distribute without permission.
- * Responsible Author: Nadir Roman <nadir.romanguerrero@epfl.ch>
+ * Authors: Cyrille Favreau <cyrille.favreau@epfl.ch>
+ *          Nadir Roman <nadir.romanguerrero@epfl.ch>
  *
  * This library is free software; you can redistribute it and/or modify it under
  * the terms of the GNU Lesser General Public License version 3.0 as published
@@ -18,6 +19,10 @@
 
 #pragma once
 
+/**
+ * @brief The MaterialShadingMode enum list the possible shading modes
+ *        for the CircuitExplorer renderers
+ */
 enum MaterialShadingMode
 {
     none = 0,
@@ -30,6 +35,11 @@ enum MaterialShadingMode
     checker = 7
 };
 
+/**
+ * @brief The MaterialClippingMode enum list the possible type of clipping
+ *        that can be applied at the material level on the CircuitExplorer
+ *        renderers
+ */
 enum MaterialClippingMode
 {
     no_clipping = 0,

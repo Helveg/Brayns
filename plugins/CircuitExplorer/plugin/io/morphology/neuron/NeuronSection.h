@@ -33,6 +33,10 @@ constexpr char DENDRITE_NAME[]          = "basal dendrite";
 constexpr char APICALDENDRITE_NAME[]    = "apical dendrite";
 }
 
+/**
+ * @brief The NeuronSection enum list holds all the available neuron/astrocyte morphology
+ *        sections, given also support to work with them as bitmask elements
+ */
 enum class NeuronSection : uint8_t
 {
     NONE            = 0,

@@ -22,6 +22,10 @@
 
 #include <unordered_map>
 
+/**
+ * @brief The ColorTable struct holds static read-only list of colors to
+ *        be used by the ColorDeck and ColorRoulette classes
+ */
 struct ColorTable
 {
     std::vector<brayns::Vector4f> VALUES;
@@ -29,27 +33,47 @@ struct ColorTable
     ColorTable();
 };
 
+/**
+ * @brief The ColorDeck class its an utility that allows to associate
+ *        std::string keys with colors, allowing the access to the laters
+ *        in an optimized way
+ */
 class ColorDeck
 {
 public:
+    /**
+     * @brief getColorForKey returns a color (brayns::Vector4f) for the given
+     *        key. If no color is associated with the key, a new one is cached
+     *        and returned
+     */
     const brayns::Vector4f& getColorForKey(const std::string& k) noexcept;
 
 private:
-    const brayns::Vector4f& emplaceColor(const std::string& k) noexcept;
+    const brayns::Vector4f& _emplaceColor(const std::string& k) noexcept;
 
     static ColorTable _TABLE;
 
     std::unordered_map<std::string, size_t> _colorMap;
+    // Holds the last index used to access the ColorTable::VALUES color list
     size_t _lastIndex {0};
 };
 
+/**
+ * @brief The ColorRoulette its an utility that returns a different color from
+ *        the ColorTable color list on each call. Allows access to the colors in
+ *        an optimized way
+ */
 class ColorRoulette
 {
 public:
+    /**
+     * @brief getNextColor returns the next color in the list. When the list
+     *        has been exhausted, it starts from the beginning.
+     */
     const brayns::Vector4f& getNextColor() noexcept;
 
 private:
     static ColorTable _TABLE;
-
+    // Holds the last index used to access the ColorTable::VALUES color list
     size_t _lastIndex {0};
 };

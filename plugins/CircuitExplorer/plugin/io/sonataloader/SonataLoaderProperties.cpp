@@ -540,7 +540,11 @@ SonataLoaderProperties::checkAndParse(const std::string& path,
         auto& pls = populations[i];
         pls.configPath = path;
         pls.node.name = populationList[i];
+
         pls.node.ids = nodeIds[i];
+        if(!pls.node.ids.empty())
+            std::sort(pls.node.ids.begin(), pls.node.ids.end());
+
         pls.node.nodeSets = nodeSets[i];
         pls.node.percentage = glm::clamp(nodeLoadPercentages[i], 0.f, 1.f);
         if(pls.node.percentage == 0.f)

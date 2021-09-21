@@ -22,6 +22,10 @@
 
 namespace bbploader
 {
+/**
+ * @brief The CompartmentSimulation class implements BBP internal format compartment
+ *        report handling (soma, full compartment, summation)
+ */
 class CompartmentSimulation : public Simulation
 {
 public:

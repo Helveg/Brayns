@@ -26,33 +26,43 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataVasculature class is in charge of quering vasculature dataset information from
+ *        the node network files
+ */
 class SonataVasculature
 {
 public:
     using Nodes = bbp::sonata::NodePopulation;
     using Selection = bbp::sonata::Selection;
 
+    /**
+     * @brief returns a list of 3D segment start points for the given node selection
+     */
     static std::vector<brayns::Vector3f>
     getSegmentStartPoints(const Nodes& nodes, const Selection& selection);
 
+    /**
+     * @brief returns a list of 3D segment end points for the given node selection
+     */
     static std::vector<brayns::Vector3f>
     getSegmentEndPoints(const Nodes& nodes, const Selection& selection);
 
+    /**
+     * @brief returns a list of radii start for the given node selection
+     */
     static std::vector<float>
     getSegmentStartRadii(const Nodes& nodes, const Selection& selection);
 
+    /**
+     * @brief returns a list of radii end for the given node selection
+     */
     static std::vector<float>
     getSegmentEndRadii(const Nodes& nodes, const Selection& selection);
 
-    static std::vector<uint32_t>
-    getSegmentSectionIds(const Nodes& nodes, const Selection& selection);
-
-    static std::vector<bbp::sonata::NodeID>
-    getSegmentStartNodes(const Nodes& nodes, const Selection& selection);
-
-    static std::vector<bbp::sonata::NodeID>
-    getSegmentEndNodes(const Nodes& nodes, const Selection& selection);
-
+    /**
+     * @brief returns a list of section types for the given node selection
+     */
     static std::vector<VasculatureSection>
     getSegmentSectionTypes(const Nodes& nodes, const Selection& selection);
 };

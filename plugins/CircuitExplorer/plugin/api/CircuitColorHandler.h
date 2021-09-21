@@ -122,6 +122,10 @@ public:
      */
     void updateColor(const std::string& method, const ColorVariables& variables);
 
+    /**
+     * @brief getModelID returns the ID of the model which represents the circuit that is
+     *        being handled by this CircuitColorHandler
+     */
     size_t getModelID() const noexcept;
 
 protected:

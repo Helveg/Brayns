@@ -26,6 +26,11 @@
 
 namespace bbploader
 {
+/**
+ * @brief The CellLoader class is in charge of load the needed data from BBP's internal
+ *        format files provided by a CircuitConfig/BlueConfig file, and transform them
+ *        into a list of MorphologyInstances that can be added to the Brayns scene
+ */
 class CellLoader
 {
 public:
