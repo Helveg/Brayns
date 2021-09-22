@@ -20,6 +20,10 @@
 
 #include <brayns/common/transferFunction/TransferFunction.h>
 
+/**
+ * @brief The TransferFunctionUtils class adds functionality to manipulate the transfer function
+ *        objects while loading circuits
+ */
 class TransferFunctionUtils
 {
 public:

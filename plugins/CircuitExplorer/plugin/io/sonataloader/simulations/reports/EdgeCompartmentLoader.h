@@ -22,6 +22,11 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The EdgeCompartmentLoader class implements the simulation loader functionality
+ *        for synapse reports. Even though NodeCompartmentLoader could handle it (since
+ *        its the same format), this class allows for an optimized loading.
+ */
 class EdgeCompartmentLoader : public SimulationLoader<EdgeSimulationMapping>
 {
 public:

@@ -27,6 +27,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataFactories class holds access to all the parameter based
+ *        loading objects factories for the SonataLoader
+ */
 class SonataFactories
 {
 public:

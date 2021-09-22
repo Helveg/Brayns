@@ -24,6 +24,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataReportHandler class implements support to handle SONATA
+ *        report simulations on the renderer for bloodflow radii simulation type.
+ */
 class VasculatureRadiiHandler : public brayns::AbstractSimulationHandler
 {
 public:

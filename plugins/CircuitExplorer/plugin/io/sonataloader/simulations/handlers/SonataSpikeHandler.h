@@ -26,6 +26,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataReportHandler class implements support to handle SONATA
+ *        report simulations on the renderer for spike simulation types.
+ */
 class SonataSpikeHandler : public brayns::AbstractSimulationHandler
 {
 public:

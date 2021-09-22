@@ -25,6 +25,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The NeuronColorHandler class provides functionality
+ *        to set a vasculature node population circuit color
+ */
 class VasculatureColorHandler : public PopulationColorHandler
 {
 public:

@@ -22,6 +22,10 @@
 
 #include <brayns/common/geometry/SDFGeometry.h>
 
+/**
+ * @brief The EndFootGroup class implements a SynapseGroup funcionality for edges
+ *        which only have a normalized distance within the section they belong to
+ */
 class SynapseAstrocyteGroup : public SynapseGroup
 {
 public:

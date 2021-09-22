@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The ChemicalSynapsePopulation class implements the edge load functionality
+ *        to read 'electrical_synapse' edge population types
+ */
 class ElectricalSynapsePopulation: public CommonEdgePopulationLoader
 {
 public:

@@ -28,6 +28,11 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The NodeSimulationMapping struct holds information about a single cells simulation
+ *        mapping. The mapping is given as a global offset into the simulation array, plus
+ *        local offsets and number of compartments for each reported section
+ */
 struct NodeSimulationMapping
 {
     size_t globalOffset;
@@ -35,15 +40,29 @@ struct NodeSimulationMapping
     std::vector<uint16_t> compartments;
 };
 
+/**
+ * @brief The EdgeSimulationMapping struct holds the simulation mapping information of all
+ *        the edges of a single cell. The mapping is given as the simulation array offset
+ *        for each edge id.
+ */
 struct EdgeSimulationMapping
 {
     std::unordered_map<bbp::sonata::EdgeID, uint64_t> offsets;
 };
 
+/**
+ * @brief The SimulationLoader class is the base class to manage SONATA report simulations.
+ *        Is in charge of computing the mapping for a set of nodes, and create the appropiate
+ *        type of brayns::AbstractSimulationHandler for the type of population it handles
+ */
 template<typename MappingType>
 class SimulationLoader
 {
 public:
+    /**
+     * @brief initialization with the path to the report file and the population
+     *        to look for inside of it
+     */
     SimulationLoader(const std::string& path, const std::string& population)
      : _path(path)
      , _population(population)
@@ -52,9 +71,17 @@ public:
 
     virtual ~SimulationLoader() = default;
 
+    /**
+     * @brief computes and returns the simulation mapping for the set of given
+     *        cells
+     */
     virtual std::vector<MappingType>
     loadMapping(const bbp::sonata::Selection&) const = 0;
 
+    /**
+     * @brief creates a brayns::AbstractSimulationHandler instance appropriate for
+     *        the type of nodes this simulation is reporting on
+     */
     virtual brayns::AbstractSimulationHandlerPtr
     createSimulationHandler(const bbp::sonata::Selection&) const = 0;
 

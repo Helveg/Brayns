@@ -209,8 +209,15 @@ struct PopulationLoadConfig
 class SonataLoaderProperties
 {
 public:
+    /**
+     * @brief return the list of all available properties for the SonataLoader
+     */
     static brayns::PropertyMap getPropertyList() noexcept;
 
+    /**
+     * @brief check the correctness of the SonataLoader user input parameters, checking
+     *        with the files on disk, and parses them into an easy to access structure.
+     */
     static std::vector<PopulationLoadConfig>
     checkAndParse(const std::string& path,
                   const bbp::sonata::CircuitConfig& config,

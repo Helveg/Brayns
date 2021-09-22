@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The ChemicalSynapsePopulation class implements the edge load functionality
+ *        to read 'endfoot' edge population types
+ */
 class EndFootPopulationLoader : public EdgePopulationLoader
 {
 public:

@@ -22,6 +22,10 @@
 
 #include <brayns/common/geometry/TriangleMesh.h>
 
+/**
+ * @brief The EndFootGroup class implements a SynapseGroup funcionality for endfoot
+ *        mesh edges
+ */
 class EndFootGroup : public SynapseGroup
 {
 public:

@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The EdgeCompartmentLoader class implements the simulation loader functionality
+ *        for compartment report type.
+ */
 class NodeCompartmentLoader : public SimulationLoader<NodeSimulationMapping>
 {
 public:

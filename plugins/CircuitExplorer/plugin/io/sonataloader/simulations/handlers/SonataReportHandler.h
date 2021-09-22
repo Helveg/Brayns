@@ -24,6 +24,11 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SonataReportHandler class implements support to handle SONATA
+ *        report simulations on the renderer for compartment, synapse,
+ *        summation and bloodflow (speed and pressure) simulation types.
+ */
 class SonataReportHandler : public brayns::AbstractSimulationHandler
 {
 public:

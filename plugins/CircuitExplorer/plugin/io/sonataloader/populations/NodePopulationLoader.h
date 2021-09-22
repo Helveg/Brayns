@@ -29,9 +29,18 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The NodePopulationLoader is the base class for implementations that load SONATA
+ *        node populations which must be transformed into morphology instances (in other
+ *        words, transforms node population data into scene geometry)
+ */
 class NodePopulationLoader
 {
 public:
+    /**
+     * @brief Initializes this loader to work with the given node population and its
+     *        properties
+     */
     NodePopulationLoader(bbp::sonata::NodePopulation&& population,
                          bbp::sonata::PopulationProperties&& properties)
      : _population(std::move(population))
@@ -41,12 +50,20 @@ public:
 
     virtual ~NodePopulationLoader() = default;
 
-
+    /**
+     * @brief load the node population data. The given parameters may be used to configure
+     *        the load process. The SubProgressReport allows to notify progress to listening
+     *        clients of the Brayns API
+     */
     virtual std::vector<MorphologyInstancePtr>
     load(const PopulationLoadConfig& loadSettings,
          const bbp::sonata::Selection& nodeSelection,
          SubProgressReport& cb) const = 0;
 
+    /**
+     * @brief creates the appropiate CircuitColorHandler instance for the type of nodes this
+     *        loader has read from disk
+     */
     virtual std::unique_ptr<CircuitColorHandler>
     createColorHandler(brayns::ModelDescriptor*, const std::string& configPath) const noexcept = 0;
 

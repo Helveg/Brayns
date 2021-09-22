@@ -22,6 +22,11 @@
 
 #include <brayns/common/geometry/SDFGeometry.h>
 
+/**
+ * @brief The EndFootGroup class implements a SynapseGroup funcionality for synapses
+ *        which can be positioned by a surface position and a normalized distance
+ *        within the morphology section they belong to
+ */
 class SurfaceSynapseGroup : public SynapseGroup
 {
 public:

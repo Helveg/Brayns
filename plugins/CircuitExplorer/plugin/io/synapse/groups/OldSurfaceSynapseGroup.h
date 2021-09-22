@@ -22,6 +22,10 @@
 
 #include <brayns/common/geometry/SDFGeometry.h>
 
+/**
+ * @brief The EndFootGroup class implements a SynapseGroup funcionality for synapeses loaded
+ *        from BlueConfig/CircuitConfig (nrn format)
+ */
 class OldSurfaceSynapseGroup : public SynapseGroup
 {
 public:

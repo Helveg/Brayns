@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The AstrocytePopulationLoader class implements the node load functionality
+ *        to read 'vasculature' node population types
+ */
 class VasculaturePopulationLoader : public NodePopulationLoader
 {
 public:

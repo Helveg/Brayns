@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The EdgeCompartmentLoader class implements the simulation loader functionality
+ *        for spike report type.
+ */
 class NodeSpikeLoader : public SimulationLoader<NodeSimulationMapping>
 {
 public:

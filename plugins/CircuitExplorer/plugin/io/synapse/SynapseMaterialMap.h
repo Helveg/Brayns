@@ -20,6 +20,10 @@
 
 #include <plugin/api/CircuitColorHandler.h>
 
+/**
+ * @brief The SynapseMaterialInfo struct holds information for a single edge of
+ *        a single cell (edge id and material id)
+ */
 struct SynapseMaterialInfo
 {
     uint64_t id;
@@ -32,6 +36,10 @@ struct SynapseMaterialInfo
     }
 };
 
+/**
+ * @brief The NeuronMaterialMap class its an implementation of the ElementMaterialMap class
+ *        that allows CircuitColorHandlers to access the materials of a cell edge geometries
+ */
 class SynapseMaterialMap : public ElementMaterialMap
 {
 public:

@@ -22,6 +22,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The NeuronColorHandler class provides functionality
+ *        to set edge population circuit color for 'endfoot' population types
+ */
 class EndFootColorHandler : public EdgePopulationColorHandler
 {
 public:

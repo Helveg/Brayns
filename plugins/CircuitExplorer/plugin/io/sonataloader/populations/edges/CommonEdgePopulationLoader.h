@@ -24,6 +24,14 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The CommonEdgePopulationLoader class implements the edge load functionality
+ *        to read a wide variety of edge population types that share the same mandatory
+ *        datasets, allowing to have a common functionality. Nonetheless, and even though
+ *        all such functionality is implemented on this class, it exists a class for one
+ *        of each of these types of edge populations, that simply extend this one. This
+ *        is done so its easier to understand the code workflow.
+ */
 class CommonEdgePopulationLoader: public EdgePopulationLoader
 {
 public:

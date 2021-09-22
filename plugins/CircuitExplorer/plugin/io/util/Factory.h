@@ -25,10 +25,18 @@
 #include <unordered_map>
 
 // No easy way before C++17 to compile-time check wether Key is hashable or not
+
+/**
+ * @brief The Factory class implements templated factory objects which can be used
+ *        to register and instantiate products from a given type of key
+ */
 template<class Key, class Product, typename ...ProductArgs>
 class Factory
 {
 public:
+    /**
+     * @brief registers an instantiable product into the factory for the given key
+     */
     template<class DerivedProduct>
     void registerProduct(const Key& key)
     {
@@ -41,6 +49,10 @@ public:
         };
     }
 
+    /**
+     * @brief attempts to instantiate a product which is associated with the given key
+     * @throws std::invalid_argument if there is not product associated with the given key
+     */
     std::unique_ptr<Product> instantiate(const Key& key, ProductArgs&& ...args) const
     {
         auto it = _factories.find(key);

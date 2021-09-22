@@ -25,12 +25,31 @@
 
 #include <unordered_map>
 
+/**
+ * @brief The SynapseGroup class is the base class to implement representations of
+ *        a cell edges (synapses) geometry, and provides functionality to add
+ *        simulation mapping based on the cell data.
+ */
 class SynapseGroup
 {
 public:
     virtual ~SynapseGroup() = default;
 
+    /**
+     * @brief mapToCell adjust this SynapseGroup geometry to the correct position
+     *        based on the morphology geometry given as parameter
+     */
     virtual void mapToCell(const MorphologyInstance&) = 0;
+
+    /**
+     * @brief mapSimulation sets the edge geometries simulation offset, which is
+     *        given as a map of edge id -> simulation array index
+     */
     virtual void mapSimulation(const std::unordered_map<uint64_t, uint64_t>&) = 0;
+
+    /**
+     * @brief addToModel adds all the edge geometries on this SynapseGroup to the
+     *        model given as parameter
+     */
     virtual ElementMaterialMap::Ptr addToModel(brayns::Model& model) const = 0;
 };

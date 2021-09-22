@@ -24,6 +24,10 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The PopulationColorHandler class is an abstract implementation of CircuitColorHandler
+ *        that eases the final implementation for SONATA population circuits
+ */
 class PopulationColorHandler : public CircuitColorHandler
 {
 public:
@@ -32,12 +36,15 @@ public:
                            const std::string& population);
 
 protected:
-    // Its not big in memory, but I guess is worth having it than parsing the config file
-    // on each request?
     const bbp::sonata::CircuitConfig _config;
     const std::string _population;
 };
 
+/**
+ * @brief The EdgePopulationColorHandler class is an abstract implementation of a
+ *        PopulationColorHandler, concretizing it a bit further for the final
+ *        implementation of SONATA population synapse circuits
+ */
 class EdgePopulationColorHandler : public PopulationColorHandler
 {
 public:

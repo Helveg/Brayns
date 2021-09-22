@@ -27,6 +27,9 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The SimulationType enum list all supported SONATA simulation report types
+ */
 enum class SimulationType : uint8_t
 {
     NONE = 0,

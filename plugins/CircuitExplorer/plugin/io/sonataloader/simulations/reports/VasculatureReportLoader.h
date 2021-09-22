@@ -22,6 +22,11 @@
 
 namespace sonataloader
 {
+/**
+ * @brief The EdgeCompartmentLoader class implements the simulation loader functionality
+ *        for bloodflow reports. Even though NodeCompartmentLoader could handle it (since
+ *        its the same format), this class allows for an optimized loading.
+ */
 class VasculatureReportLoader : public SimulationLoader<NodeSimulationMapping>
 {
 public:
@@ -38,6 +43,11 @@ public:
     createSimulationHandler(const bbp::sonata::Selection&) const override;
 };
 
+/**
+ * @brief The EdgeCompartmentLoader class implements the simulation loader functionality
+ *        for bloodflow radii reports. Even though VasculatureReportLoader could handle it (since
+ *        its the same format), this class allows for an optimized loading.
+ */
 class VasculatureRadiiReportLoader : public VasculatureReportLoader
 {
 public:
