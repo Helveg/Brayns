@@ -48,6 +48,8 @@ void AnimationParameters::reset()
 {
     _updateValue(_current, 0u, false);
     _updateValue(_dt, 0., false);
+    _updateValue(_startFrame, 0u, false);
+    _updateValue(_endFrame, 0u, false);
     _updateValue(_numFrames, 0u, false);
     _updateValue(_playing, false, false);
     _updateValue(_unit, std::string(), false);
@@ -61,6 +63,7 @@ void AnimationParameters::setDelta(const int32_t delta)
 {
     if (delta == 0)
         throw std::logic_error("Animation delta cannot be set to 0");
+
     _updateValue(_delta, delta);
 }
 

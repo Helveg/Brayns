@@ -32,7 +32,8 @@
 class CompartmentHandler : public brayns::AbstractSimulationHandler
 {
 public:
-    CompartmentHandler(const std::shared_ptr<brion::CompartmentReport>& report);
+    CompartmentHandler(const std::string& path,
+                       const std::shared_ptr<brion::CompartmentReport>& report);
     CompartmentHandler(const CompartmentHandler&);
 
     brayns::AbstractSimulationHandlerPtr clone() const final;
@@ -42,6 +43,7 @@ public:
     void* getFrameDataImpl(const uint32_t frame) final;
 
 private:
+    const std::string _path;
     const std::shared_ptr<brion::CompartmentReport> _report;
     bool _ready{false};
 };

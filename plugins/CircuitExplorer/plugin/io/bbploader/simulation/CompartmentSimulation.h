@@ -36,6 +36,7 @@ public:
     brayns::AbstractSimulationHandlerPtr createHandler() const final;
 
 private:
+    const std::string _path;
     const std::shared_ptr<brion::CompartmentReport> _report;
 };
 }

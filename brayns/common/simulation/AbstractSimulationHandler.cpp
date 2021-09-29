@@ -41,18 +41,12 @@ uint32_t AbstractSimulationHandler::_getBoundedFrame(const uint32_t inputFrame) 
 {
     const auto frame = static_cast<uint32_t>(inputFrame * _frameAdjuster);
     const double frameTimestamp = static_cast<double>(frame) * _dt;
-    uint32_t boundedFrame = 0;
 
     if(frameTimestamp <= _startTime)
-        boundedFrame = 0;
+        return 0;
     else if(frameTimestamp >= _endTime)
-        boundedFrame = std::max(_nbFrames - 1, 0u);
+        return _nbFrames > 0? _nbFrames - 1 : 0;
     else
-    {
-        const double realTimestamp = frameTimestamp - _startTime;
-        boundedFrame = static_cast<uint32_t>(realTimestamp / _dt);
-    }
-
-    return boundedFrame;
+        return static_cast<uint32_t>(frameTimestamp / _dt);
 }
 }

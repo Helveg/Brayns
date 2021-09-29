@@ -39,35 +39,80 @@ public:
     /** Reset to a 'no animation' state: 0 for dt, start and end. */
     void reset();
 
+    /** The earliest frame index (computed from the lowest simulation start time) */
+    void setStartFrame(const uint32_t startFrame)
+    {
+        _updateValue(_startFrame, startFrame);
+        _updateValue(_numFrames, _startFrame > _endFrame? 0 : _endFrame - _startFrame, true);
+        if(_current >= _numFrames)
+            _updateValue(_current, _numFrames > 0? _numFrames - 1 : 0, true);
+    }
+
+    auto getStartFrame() const noexcept
+    {
+        return _startFrame;
+    }
+
+    void setEndFrame(const uint32_t endFrame)
+    {
+        _updateValue(_endFrame, endFrame);
+        _updateValue(_numFrames, _startFrame > _endFrame? 0 : _endFrame - _startFrame, true);
+        if(_current >= _numFrames)
+            _updateValue(_current, _numFrames > 0? _numFrames - 1 : 0, true);
+
+    }
+
+    auto getEndFrame() const noexcept
+    {
+        return _endFrame;
+    }
+
     /** The current frame number of the animation. */
     void setFrame(uint32_t value)
     {
         _updateValue(_current, _adjustedCurrent(value));
     }
-    uint32_t getFrame() const { return _current; }
+
+    uint32_t getFrame() const noexcept
+    {
+        return _current;
+    }
+
     /** The (frame) delta to apply for animations to select the next frame. */
     void setDelta(const int32_t delta);
-    int32_t getDelta() const { return _delta; }
-    void setNumFrames(const uint32_t numFrames,
-                      const bool triggerCallback = true)
+
+    int32_t getDelta() const noexcept
     {
-        _updateValue(_numFrames, numFrames, triggerCallback);
-        _updateValue(_current, std::min(_current, _numFrames), triggerCallback);
+        return _delta;
     }
-    uint32_t getNumFrames() const { return _numFrames; }
+
+    /**
+     * @brief Number of effective simulation frames (taking into account all simulations
+     *        start and end times)
+     */
+    uint32_t getNumFrames() const noexcept
+    {
+        return _numFrames;
+    }
+
     /** The dt of a simulation. */
     void setDt(const double dt, const bool triggerCallback = true)
     {
         _updateValue(_dt, dt, triggerCallback);
     }
-    double getDt() const { return _dt; }
+
+    double getDt() const noexcept
+    {
+        return _dt;
+    }
+
     /** The time unit of a simulation. */
     void setUnit(const std::string& unit, const bool triggerCallback = true)
     {
         _updateValue(_unit, unit, triggerCallback);
     }
-    using IsReadyCallback = std::function<bool()>;
 
+    using IsReadyCallback = std::function<bool()>;
     /**
      * Set a callback to report if the current animation frame is ready
      * (e.g. simulation has been loaded) and the animation can advance to the
@@ -88,27 +133,42 @@ public:
         }
     }
 
-    bool hasIsReadyCallback() const { return !!_isReadyCallback; }
+    bool hasIsReadyCallback() const
+    {
+        return !!_isReadyCallback;
+    }
+
     /** Update the current frame if delta is set and all listeners are ready. */
     void update();
 
     /** Jump 'frames' from current frame if all listeners are ready. */
     void jumpFrames(int frames);
 
-    void togglePlayback() { _playing = !_playing; }
-    bool isPlaying() const { return _playing; }
+    void togglePlayback() noexcept
+    {
+        _playing = !_playing;
+    }
+
+    bool isPlaying() const noexcept
+    {
+        return _playing;
+    }
 private:
-    uint32_t _adjustedCurrent(const uint32_t newCurrent) const
+    uint32_t _adjustedCurrent(const uint32_t newCurrent) const noexcept
     {
         return _numFrames == 0 ? 0 : newCurrent % _numFrames;
     }
 
     bool _canUpdateFrame() const;
 
-    uint32_t _numFrames{0};
+    uint32_t _startFrame{0};
+    uint32_t _endFrame{0};
+    uint32_t _numFrames{0}; // Kept to avoid API break. TODO: Rework this whole thing
     uint32_t _current{0};
     int32_t _delta{1};
+
     bool _playing{false};
+
     double _dt{0};
     std::string _unit;
 

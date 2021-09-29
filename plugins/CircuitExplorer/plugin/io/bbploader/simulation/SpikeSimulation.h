@@ -35,6 +35,7 @@ public:
     brayns::AbstractSimulationHandlerPtr createHandler() const final;
 
 private:
+    const std::string _path;
     const float _transitionTime;
     const brain::GIDSet _gids;
     std::shared_ptr<brain::SpikeReportReader> _report;

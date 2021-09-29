@@ -25,7 +25,8 @@ namespace bbploader
 SpikeSimulation::SpikeSimulation(const std::string& reportPath,
                                  const brain::GIDSet& inputGids,
                                  const float tt)
- : _transitionTime(tt)
+ : _path(reportPath)
+ , _transitionTime(tt)
  , _gids(inputGids)
  , _report(std::make_shared<brain::SpikeReportReader>(brion::URI(reportPath), inputGids))
 {
@@ -48,6 +49,6 @@ SpikeSimulation::getMapping(const brain::GIDSet& inputGids) const
 brayns::AbstractSimulationHandlerPtr
 SpikeSimulation::createHandler() const
 {
-    return std::make_shared<SpikeHandler>(_transitionTime, _gids, _report);
+    return std::make_shared<SpikeHandler>(_path, _transitionTime, _gids, _report);
 }
 }

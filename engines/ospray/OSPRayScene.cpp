@@ -331,7 +331,7 @@ bool OSPRayScene::_commitVolumes(ModelDescriptors& modelDescriptors)
 
 void OSPRayScene::_commitSimulationData(ModelDescriptors& modelDescriptors)
 {
-    auto currentFrame = _animationParameters.getFrame();
+    auto currentFrame = _animationParameters.getStartFrame() + _animationParameters.getFrame();
 
     if(_lastFrame != currentFrame || isModified())
     {

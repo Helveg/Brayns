@@ -36,10 +36,12 @@ inline auto __frameIndexToTimestamp(const uint32_t frame, const double dt) noexc
 }
 } // namespace
 
-SpikeHandler::SpikeHandler(const float transitionTime,
+SpikeHandler::SpikeHandler(const std::string& path,
+                           const float transitionTime,
                            const brain::GIDSet& gids,
                            const std::shared_ptr<brain::SpikeReportReader>& report)
  : brayns::AbstractSimulationHandler()
+ , _path(path)
  , _transition(transitionTime)
  , _report(report)
 {
@@ -61,6 +63,7 @@ SpikeHandler::SpikeHandler(const float transitionTime,
 
 SpikeHandler::SpikeHandler(const SpikeHandler& other)
  : brayns::AbstractSimulationHandler(other)
+ , _path(other._path)
  , _transition(other._transition)
  , _report(other._report)
  , _gidMap(other._gidMap)

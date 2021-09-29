@@ -21,6 +21,8 @@
 
 #include "CompartmentHandler.h"
 
+#include <plugin/api/Log.h>
+
 namespace
 {
 inline auto __frameIndexToTimestamp(const uint32_t frame, const double dt) noexcept
@@ -29,8 +31,10 @@ inline auto __frameIndexToTimestamp(const uint32_t frame, const double dt) noexc
 }
 }
 
-CompartmentHandler::CompartmentHandler(const std::shared_ptr<brion::CompartmentReport>& report)
+CompartmentHandler::CompartmentHandler(const std::string& path,
+                                       const std::shared_ptr<brion::CompartmentReport>& report)
  : brayns::AbstractSimulationHandler()
+ , _path(path)
  , _report(report)
 {
     _startTime = _report->getStartTime();
@@ -39,10 +43,12 @@ CompartmentHandler::CompartmentHandler(const std::shared_ptr<brion::CompartmentR
     _nbFrames = (_endTime - _startTime) / _dt;
     _unit = _report->getTimeUnit();
     _frameSize = _report->getFrameSize();
+    _frameData.resize(_frameSize, -100.f);
 }
 
 CompartmentHandler::CompartmentHandler(const CompartmentHandler& o)
  : brayns::AbstractSimulationHandler(o)
+ , _path(o._path)
  , _report(o._report)
  , _ready(false)
 {
@@ -61,8 +67,20 @@ bool CompartmentHandler::isReady() const
 void* CompartmentHandler::getFrameDataImpl(const uint32_t frame)
 {
     _ready = false;
-    auto loadFuture = _report->loadFrame(__frameIndexToTimestamp(frame, _dt));
-    _frameData = *(loadFuture.get().data);
-    _ready = true;
+    const auto ts = __frameIndexToTimestamp(frame, _dt) + _startTime;
+    PLUGIN_WARN << std::setprecision(20) << ts << std::endl;
+    auto loadFuture = _report->loadFrame(ts);
+    if(loadFuture.valid())
+    {
+        loadFuture.wait();
+        auto frameData = loadFuture.get();
+        if(frameData.data.get() != nullptr)
+        {
+            _frameData = std::move(*frameData.data);
+            _ready = true;
+        }
+        else
+            PLUGIN_WARN << "Attempt to get frame from " << _path << " failed" << std::endl;
+    }
     return _frameData.data();
 }

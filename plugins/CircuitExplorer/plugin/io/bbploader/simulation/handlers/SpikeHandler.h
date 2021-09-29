@@ -36,7 +36,8 @@ namespace bbploader
 class SpikeHandler : public brayns::AbstractSimulationHandler
 {
 public:
-    SpikeHandler(const float transitionTime,
+    SpikeHandler(const std::string& path,
+                 const float transitionTime,
                  const brain::GIDSet& gids,
                  const std::shared_ptr<brain::SpikeReportReader>& report);
     SpikeHandler(const SpikeHandler&);
@@ -48,6 +49,7 @@ public:
     void* getFrameDataImpl(const uint32_t frame) final;
 
 private:
+    const std::string _path;
     const float _transition;
     const std::shared_ptr<brain::SpikeReportReader> _report;
     std::unordered_map<uint64_t, uint64_t> _gidMap;

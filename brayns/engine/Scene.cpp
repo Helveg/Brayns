@@ -593,8 +593,10 @@ void Scene::_loadIBLMaps(const std::string& envMap)
 void Scene::_updateAnimationParameters()
 {
     std::vector<AbstractSimulationHandler*> handlers;
-    uint32_t numFrames = 0;
-    double dt = std::numeric_limits<double>::max();
+
+    double earlierStart = std::numeric_limits<double>::max();
+    double latestEnd = std::numeric_limits<double>::lowest();
+    double smallestDt = std::numeric_limits<double>::max();
     {
         std::unique_lock<std::shared_timed_mutex> lock(_modelMutex);
         for(auto& modelDesc : _modelDescriptors)
@@ -606,12 +608,9 @@ void Scene::_updateAnimationParameters()
             if(simHandler)
             {
                 handlers.push_back(simHandler);
-                const auto handlerNumFrames = simHandler->getNbFrames();
-                if(handlerNumFrames > numFrames)
-                {
-                    dt = simHandler->getDt();
-                    numFrames = handlerNumFrames;
-                }
+                earlierStart = std::min(earlierStart, simHandler->getStartTime());
+                latestEnd = std::max(latestEnd, simHandler->getEndTime());
+                smallestDt = std::min(smallestDt, simHandler->getDt());
             }
         }
     }
@@ -625,8 +624,8 @@ void Scene::_updateAnimationParameters()
         // Set the frame adjuster
         for(auto& handler : handlers)
         {
-            if(handler->getDt() != dt)
-                handler->setFrameAdjuster(dt / handler->getDt());
+            if(handler->getDt() != smallestDt)
+                handler->setFrameAdjuster(smallestDt / handler->getDt());
         }
 
         ap.setIsReadyCallback(
@@ -640,10 +639,14 @@ void Scene::_updateAnimationParameters()
                 return true;
             });
 
-        ap.setDt(dt, false);
+        ap.setDt(smallestDt, false);
+        ap.setStartFrame(static_cast<uint32_t>(earlierStart / smallestDt));
+        ap.setEndFrame(static_cast<uint32_t>(latestEnd / smallestDt));
         ap.setUnit(handlers[0]->getUnit(), false);
-        ap.setNumFrames(numFrames, false);
         ap.markModified();
+
+        std::cout << "Start frame: " << static_cast<uint32_t>(earlierStart / smallestDt) << std::endl;
+        std::cout << "End frame: " << static_cast<uint32_t>(latestEnd / smallestDt) << std::endl;
     }
 }
 

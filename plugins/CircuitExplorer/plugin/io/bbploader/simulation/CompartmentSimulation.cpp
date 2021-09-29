@@ -24,7 +24,8 @@ namespace bbploader
 {
 CompartmentSimulation::CompartmentSimulation(const std::string& path,
                                              const brain::GIDSet& inputGids)
- : _report(std::make_shared<brion::CompartmentReport>(brion::URI(path),
+ : _path(path)
+ , _report(std::make_shared<brion::CompartmentReport>(brion::URI(path),
                                                       brion::MODE_READ,
                                                       inputGids))
 {
@@ -64,6 +65,6 @@ CompartmentSimulation::getMapping(const brain::GIDSet& inputGids) const
 brayns::AbstractSimulationHandlerPtr
 CompartmentSimulation::createHandler() const
 {
-    return std::make_shared<CompartmentHandler>(_report);
+    return std::make_shared<CompartmentHandler>(_path, _report);
 }
 }
