@@ -67,9 +67,7 @@ bool CompartmentHandler::isReady() const
 void* CompartmentHandler::getFrameDataImpl(const uint32_t frame)
 {
     _ready = false;
-    const auto ts = __frameIndexToTimestamp(frame, _dt) + _startTime;
-    PLUGIN_WARN << std::setprecision(20) << ts << std::endl;
-    auto loadFuture = _report->loadFrame(ts);
+    auto loadFuture = _report->loadFrame(__frameIndexToTimestamp(frame, _dt) + _startTime);
     if(loadFuture.valid())
     {
         loadFuture.wait();

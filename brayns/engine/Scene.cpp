@@ -644,9 +644,6 @@ void Scene::_updateAnimationParameters()
         ap.setEndFrame(static_cast<uint32_t>(latestEnd / smallestDt));
         ap.setUnit(handlers[0]->getUnit(), false);
         ap.markModified();
-
-        std::cout << "Start frame: " << static_cast<uint32_t>(earlierStart / smallestDt) << std::endl;
-        std::cout << "End frame: " << static_cast<uint32_t>(latestEnd / smallestDt) << std::endl;
     }
 }
 
