@@ -495,7 +495,7 @@ void Model::copyFrom(const Model& rhs)
     if (rhs._simulationHandler)
     {
         _simulationHandler = rhs._simulationHandler->clone();
-        _simulationEnabled = true;
+        setSimulationEnabled(true);
         // Reset simulation handler current frame so the simulation data gets commited
         // (current frame != animation params current frame)
         _simulationHandler->setCurrentFrame(std::numeric_limits<uint32_t>::max());
@@ -651,7 +651,7 @@ MaterialPtr Model::createMaterial(const size_t materialId,
 
 void Model::setSimulationHandler(AbstractSimulationHandlerPtr handler)
 {
-    _simulationEnabled = handler != nullptr;
+    setSimulationEnabled(handler != nullptr);
     if (_simulationHandler != handler)
         _unbindMaterials(_simulationHandler, _materials);
     _simulationHandler = handler;

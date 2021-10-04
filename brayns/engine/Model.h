@@ -478,7 +478,11 @@ public:
     }
     const std::set<BVHFlag>& getBVHFlags() const { return _bvhFlags; }
 
-    void setSimulationEnabled(const bool v) { _simulationEnabled = v; }
+    void setSimulationEnabled(const bool v)
+    {
+        _simulationEnabled = v;
+        _simulationEnabledDirty = true;
+    }
     bool isSimulationEnabled() const { return _simulationEnabled; }
 
     void updateBounds();
@@ -499,6 +503,7 @@ protected:
     VolumeParameters& _volumeParameters;
 
     AbstractSimulationHandlerPtr _simulationHandler;
+    bool _simulationEnabledDirty {true};
     bool _simulationEnabled {false};
 
     MaterialMap _materials;

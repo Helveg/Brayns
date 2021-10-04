@@ -498,7 +498,7 @@ void OSPRayModel::commitMaterials(const std::string& renderer)
 
 void OSPRayModel::commitSimulationParams()
 {
-    if(_simulationEnabled)
+    if(_simulationEnabledDirty)
     {
         if (_secondaryModel)
         {
@@ -512,6 +512,7 @@ void OSPRayModel::commitSimulationParams()
             osphelper::set(_primaryModel, "simOffset", static_cast<int32_t>(_simulationOffset));
             ospCommit(_primaryModel);
         }
+        _simulationEnabledDirty = false;
     }
 }
 

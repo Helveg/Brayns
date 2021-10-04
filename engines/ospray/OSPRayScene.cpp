@@ -331,13 +331,10 @@ bool OSPRayScene::_commitVolumes(ModelDescriptors& modelDescriptors)
 
 void OSPRayScene::_commitSimulationData(ModelDescriptors& modelDescriptors)
 {
-    auto currentFrame = _animationParameters.getStartFrame() + _animationParameters.getFrame();
-
-    if(_lastFrame != currentFrame || isModified())
+    const auto currentFrame = _animationParameters.getAbsoluteFrame();
+    if(_lastFrame != currentFrame || isModified() || _ospSimulationData == nullptr)
     {
-
         _lastFrame = currentFrame;
-
         _simData.clear();
 
         uint64_t offset = 0;
@@ -359,16 +356,17 @@ void OSPRayScene::_commitSimulationData(ModelDescriptors& modelDescriptors)
             _simData.insert(_simData.end(), data, data + dataSize);
             offset += dataSize;
         }
+
+        ospRelease(_ospSimulationData);
+        _ospSimulationData = nullptr;
+        if(_simData.empty())
+            return;
+
+        _ospSimulationData =
+            ospNewData(_simData.size(), OSP_FLOAT, _simData.data(), OSP_DATA_SHARED_BUFFER);
+
+        ospCommit(_ospSimulationData);
     }
-
-    ospRelease(_ospSimulationData);
-    _ospSimulationData = nullptr;
-    if(_simData.empty())
-        return;
-
-    _ospSimulationData =
-        ospNewData(_simData.size(), OSP_FLOAT, _simData.data(), OSP_DATA_SHARED_BUFFER);
-    ospCommit(_ospSimulationData);
 }
 
 } // namespace brayns

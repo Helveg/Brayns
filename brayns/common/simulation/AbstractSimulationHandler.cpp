@@ -30,10 +30,12 @@ AbstractSimulationHandler& AbstractSimulationHandler::operator=(
     _currentFrame = rhs._currentFrame;
     _nbFrames = rhs._nbFrames;
     _frameSize = rhs._frameSize;
+    _startTime = rhs._startTime;
+    _endTime = rhs._endTime;
     _dt = rhs._dt;
+    _frameAdjuster = rhs._frameAdjuster;
     _unit = rhs._unit;
     _frameData = rhs._frameData;
-
     return *this;
 }
 

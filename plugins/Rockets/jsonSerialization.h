@@ -599,6 +599,8 @@ inline void init(brayns::AnimationParameters* a, ObjectHandler* h)
 {
     h->add_property("frame_count", &a->_numFrames, Flags::Optional);
     h->add_property("current", &a->_current, Flags::Optional);
+    h->add_property("start_frame", &a->_startFrame, Flags::Optional);
+    h->add_property("end_frame", &a->_endFrame, Flags::Optional);
     h->add_property("delta", &a->_delta, Flags::Optional);
     h->add_property("dt", &a->_dt, Flags::Optional);
     h->add_property("playing", &a->_playing, Flags::Optional);

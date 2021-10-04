@@ -78,6 +78,15 @@ public:
         return _current;
     }
 
+    /**
+     * @brief returns the current simulation frame index taking into account the global
+     *        simulation start frame index
+     */
+    uint32_t getAbsoluteFrame() const noexcept
+    {
+        return _startFrame + _current;
+    }
+
     /** The (frame) delta to apply for animations to select the next frame. */
     void setDelta(const int32_t delta);
 
