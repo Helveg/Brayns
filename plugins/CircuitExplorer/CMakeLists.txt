@@ -90,6 +90,7 @@ set(BRAYNSCIRCUITEXPLORER_SOURCES
     plugin/io/sonataloader/populations/edges/colorhandlers/EndFootColorHandler.cpp
     plugin/io/sonataloader/populations/nodes/AstrocytePopulationLoader.cpp
     plugin/io/sonataloader/populations/nodes/BiophysicalPopulationLoader.cpp
+    plugin/io/sonataloader/populations/nodes/PointNeuronPopulationLoader.cpp
     plugin/io/sonataloader/populations/nodes/VasculaturePopulationLoader.cpp
     plugin/io/sonataloader/populations/nodes/colorhandlers/NeuronColorHandler.cpp
     plugin/io/sonataloader/populations/nodes/colorhandlers/VasculatureColorHandler.cpp
@@ -176,6 +177,7 @@ set(BRAYNSCIRCUITEXPLORER_PUBLIC_HEADERS
     plugin/io/sonataloader/populations/edges/colorhandlers/EndFootColorHandler.h
     plugin/io/sonataloader/populations/nodes/AstrocytePopulationLoader.h
     plugin/io/sonataloader/populations/nodes/BiophysicalPopulationLoader.h
+    plugin/io/sonataloader/populations/nodes/PointNeuronPopulationLoader.h
     plugin/io/sonataloader/populations/nodes/VasculaturePopulationLoader.h
     plugin/io/sonataloader/populations/nodes/colorhandlers/NeuronColorHandler.h
     plugin/io/sonataloader/populations/nodes/colorhandlers/VasculatureColorHandler.h

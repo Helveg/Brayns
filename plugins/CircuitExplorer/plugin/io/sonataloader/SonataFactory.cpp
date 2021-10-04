@@ -29,6 +29,7 @@
 #include <plugin/io/sonataloader/populations/edges/SynapseAstrocytePopulationLoader.h>
 #include <plugin/io/sonataloader/populations/nodes/AstrocytePopulationLoader.h>
 #include <plugin/io/sonataloader/populations/nodes/BiophysicalPopulationLoader.h>
+#include <plugin/io/sonataloader/populations/nodes/PointNeuronPopulationLoader.h>
 #include <plugin/io/sonataloader/populations/nodes/VasculaturePopulationLoader.h>
 
 #include <plugin/io/sonataloader/simulations/reports/EdgeCompartmentLoader.h>
@@ -53,6 +54,7 @@ SonataFactories::SonataFactories()
     _nodeLoaders.registerProduct<AstrocytePopulationLoader>("astrocyte");
     _nodeLoaders.registerProduct<BiophysicalPopulationLoader>("biophysical");
     _nodeLoaders.registerProduct<VasculaturePopulationLoader>("vasculature");
+    _nodeLoaders.registerProduct<PointNeuronPopulationLoader>("point_neuron");
 
     _simulations.registerProduct<NodeCompartmentLoader>(SimulationType::COMPARTMENT);
     _simulations.registerProduct<NodeSpikeLoader>(SimulationType::SPIKES);
