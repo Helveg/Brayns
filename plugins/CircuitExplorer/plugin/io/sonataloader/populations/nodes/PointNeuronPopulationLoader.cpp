@@ -41,13 +41,15 @@ PointNeuronPopulationLoader::load(const PopulationLoadConfig& loadSettings,
     sharedData->sectionMap.insert({-1, {0}});
     sharedData->sectionTypeMap.insert({NeuronSection::SOMA, {0}});
 
+    #pragma omp parallel for
     for(size_t i = 0; i < nodesSize; ++i)
     {
         result[i] = std::make_unique<SampleNeuronInstance>(
                         std::vector<brayns::Sphere>{brayns::Sphere(positions[i], radius)},
                         sharedData);
-        cb.tick();
     }
+
+    cb.tickBatch(nodesSize);
 
     return result;
 }
