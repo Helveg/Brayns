@@ -33,15 +33,31 @@ namespace sonataloader
 {
 namespace
 {
+// The endfeet mesh file is not retruned by bbp::sonata::CircuitConfig (by now).
+// Get it manually from the expanded json
 std::string __getEndFeetAreasPath(const bbp::sonata::CircuitConfig& config,
                                   const std::string& edgePopulation,
                                   const std::string& basePath)
 {
     const auto json = nlohmann::json::parse(config.getExpandedJSON());
 
+    std::string resultPath = "";
+
+    // First fetch default one, if any
+    const auto componentsIt = json.find("components");
+    if(componentsIt != json.end())
+    {
+        const auto& componentsJson = *componentsIt;
+        auto endFeetIt = componentsJson.find("end_feet_area");
+        if(endFeetIt != componentsJson.end())
+            resultPath = endFeetIt->get<std::string>();
+    }
+
+
     const auto& edgeNetwork = json["networks"]["edges"];
     auto it = edgeNetwork.begin();
-    for(; it != edgeNetwork.end(); ++it)
+    bool found = false;
+    for(; it != edgeNetwork.end() && !found; ++it)
     {
         auto file = (*it)["edges_file"].get<std::string>();
         if(file[0] != '/')
@@ -50,12 +66,32 @@ std::string __getEndFeetAreasPath(const bbp::sonata::CircuitConfig& config,
         const auto populationStorage = bbp::sonata::EdgeStorage(file);
         for(const auto& population : populationStorage.populationNames())
         {
-            if(population == edgePopulation && fs::exists(file))
-                return fs::path(file).parent_path().string();
+            if(population != edgePopulation)
+                continue;
+
+            found = true;
+
+            auto popIt = it->find("populations");
+            if(popIt != it->end())
+            {
+                auto edgePopIt = popIt->find(edgePopulation);
+                if(edgePopIt != popIt->end())
+                {
+                    auto edgePopEndFeetIt = edgePopIt->find("end_feet_area");
+                    if(edgePopEndFeetIt != edgePopIt->end())
+                        resultPath = edgePopEndFeetIt->get<std::string>();
+                }
+            }
+            break;
         }
     }
 
-    throw std::runtime_error("EndFootPopulationLoader: Cannot locate endfeet areas H5 file");
+    if(resultPath.empty())
+        throw std::runtime_error("EndFootPopulationLoader: Cannot locate endfeet areas H5 file");
+    else if(!fs::path(resultPath).is_absolute())
+        resultPath = fs::path(fs::path(basePath)/fs::path(resultPath)).lexically_normal().string();
+
+    return resultPath;
 }
 }
 
@@ -67,10 +103,8 @@ EndFootPopulationLoader::load(const PopulationLoadConfig& loadConfig,
     if(_afferent)
         throw std::runtime_error("Afferent edges not supported on endfoot connectivity");
 
-    PLUGIN_WARN << "CURRENTLY obtaining the endfeet_areas file is hardcoded" << std::endl;
-
     const auto basePath = fs::path(loadConfig.configPath).parent_path().string();
-    auto path = __getEndFeetAreasPath(_config, _population.name(), basePath) + "/endfeet_areas.h5";
+    auto path = __getEndFeetAreasPath(_config, _population.name(), basePath);
 
     const auto nodes = nodeSelection.flatten();
 
